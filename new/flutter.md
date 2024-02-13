@@ -30,10 +30,52 @@
 > 하지만 바쁘다 바빠 한국에서는 웹뷰를 적극적으로 사용하고 있는 곳이 많아 보임
 
 ---
+
 ## 어떤 도구를 사용할까?
-> 1. native vs cross-platform
-> 2. react-native vs flutter
 
+### native
+- 각 운영체제에 맞는 개발 및 운영이 필요
+  - `Android`: 안드로이드 스튜디오에서 Kotlin 사용
+  - `iOS`: XCode에서 Swift 사용
+- 사실상 두개의 앱을 만드는 것과 동일
 
+### cross-platform app
+- 하나의 코드로 안드로이드, iOS에서 똑같이 동작하는 앱
+- 즉, 동시에 개발 및 운영이 가능
 
-To be continued ..
+---
+
+## cross-platform
+### React Native
+- 자바스크립트 / 리액트 기반
+- 메트로라는 js 번들러를 사용
+- 런타임 중에 js 브릿지를 생성
+  - js 코드를 네이티브 코드로 컴파일
+  - 브릿지를 통해 네이티브 ui에 접근
+- object-c api로 iOS 컴포넌트 렌더링
+- 자바 api로 안드로이드 컴포넌트 렌더링
+
+### Flutter
+- iOS / Android 뿐만 아니라 데스크탑, 웹 브라우저도 지원
+- Dart 기반
+- 별도의 브릿지 필요 x
+    > #### 브릿지가 없는데 어떻게 네이티브로 변환이 될까?
+    > 
+    > - Dart는 앱이 빌드되기 전에 코드를 미리 컴파일하는 AOT(Ahead-of-Time) 전략을 지원
+    > - 컴파일 타임에 Dart 코드를 -> 네이티브 코드로 컴파일
+    > 
+    > 따라서, 브릿지 없이 각 플랫폼과 직접 통신 -> 빠름
+- 자체적인 위젯을 캔버스 위에 직접 렌더링하기 때문에 동일한 ui를 제공
+
+#### 2023 크로스 플랫폼 트렌드
+
+<img src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/05d118c5-6791-499e-800b-38705c074eb3" width="500px" />
+
+- RN이 먼저 릴리즈돼서 초반에는 인기가 더 많았지만
+- 2023년 기준 Stack Overflow 설문조사에 따르면 Flutter가 더 앞서나가는 중
+- 나는 힙쟁이니까 플러터로 개발할거다
+
+<br />
+
+- 참고하면 좋은 자료 🤟
+  - [라인에서 배달 앱을 RN을 Flutter로 전환한 내용](https://engineering.linecorp.com/ko/blog/demaecan-2nd-recode-kmm-to-flutter) 
