@@ -58,7 +58,7 @@ _CDB와 PDB를 설명하는 간단한 예시_
 
 ### 정리: 그래서 왜 사용하나?
 
-- **More efficient use of resources**: 효율적인 서버 자원 사용 가능. 10개 서비스를 위해 10개의 DB 서버를 구동할 경우, 각각의 서버 CPU, Memory 사용량에 여유분을 준비해야 한다. 이유는 자원을 100% 다 쓰게 되면 시스템이 서버리거나 느려지기 때문에 만일의 사태에 대비해서 충분한 자원을 준비해 둬야 하기 때문이다. CDB를 사용하면 서비스들이 전체 자원을 공유하기 때문에 서비스마다 여유분을 고려할 필요가 없고 전체 사용량을 기준으로 적당한 여유 자원을 준비할 수 있다.
+- **More efficient use of resources**: 효율적으로 서버 자원 사용 가능. 10개 서비스를 위해 10개의 DB 서버를 구동할 경우, 각각의 서버 CPU, Memory 사용량에 여유분을 준비해야 한다. 이유는 자원을 100% 다 쓰게 되면 시스템이 서버리거나 느려지기 때문에 만일의 사태에 대비해서 충분한 자원을 준비해 둬야 하기 때문이다. CDB를 사용하면 서비스들이 전체 자원을 공유하기 때문에 서비스마다 여유분을 고려할 필요가 없고 전체 사용량을 기준으로 적당한 여유 자원을 준비할 수 있다.
 - **Easier duplication and access across resources**: PDB를 사용하면, 쉽게 PDB를 복제해서 테스트 또는 개발 DB로 사용할 수 있다. 또한, Atlassian과 같이 많은 SaaS 서비스을 회사마다 독립적으로 관리해야 하고, 서비스끼리 통합된 데이터를 공유해야 할 경우, 이런 multi-tenant 구조 사용이 적합하다 ([참고](https://www.atlassian.com/trust/reliability/cloud-architecture-and-operational-practices#distributed-services-architecture))
 - **Portability**: 기존 버전의 Oracle Database를 unplug하고, 최신 버전의 Oracle DB를 plug 하여 빠르고 독립적으로 DB 업그레이드가 가능하다. 특정 서비스를 종료시키거나 새로운 서비스를 추가하는 작업 또한 쉽게 가능하며, 플랫폼에 연결된 후 곧바로 다른 서비스들과 통합된 서비스를 제공할 수 있다.
 - **Easier to administrate, including user and admin controls**: 패치, 백업 등 관리가 수월함. 시스템상으로는 1개의 DB이기 때문에 패치, 백업 등의 작업을 1번만 해주면 끝.
