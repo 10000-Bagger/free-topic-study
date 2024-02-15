@@ -69,4 +69,6 @@ CMS는 그 이전에 사용되던 GC로 꽤나 위상이 높았었다. STW를 �
 
 <br> 
 
+# 2. Concurrent Mark & Sweep GC
+
 분량 조절 실패 + 이동해야 해서 CMS GC는 2편에서 ㅋ
