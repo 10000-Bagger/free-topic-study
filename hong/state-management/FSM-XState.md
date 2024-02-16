@@ -119,10 +119,11 @@ XState는 이러한 고려 사항을 충족시켜 줄 뿐만 아니라 복잡한
 
 Xstate는 JavaScript와 TypeScript 앱을 위한 상태 관리 및 조정 솔루션이다. XState는 상태를 시각화하여 관리할 수 있도록 도와주며, dependency가 없어 기존 프로젝트에 바로 적용이 가능하며, statechart를 코드로 변환해 주는 기능도 제공한다.
 
-검색을 해보면, redux와 xstate를 비교하는 글을 확인할 수 있다.
+검색을 해보면, redux와 xstate를 비교하는 글을 확인할 수 있다. ([참고](https://stackoverflow.com/questions/54482695/what-is-an-actual-difference-between-redux-and-a-state-machine-e-g-xstate))
 
 > state + event = nextState
-> 위 관점에서 redux와 xstate는 비슷하다고 볼 수 있다. 하지만, redux는 상태를 관리하는 데에 그치지만, xstate는 FSM의 요소를 고려하여 상태를 관리할 수 있을 뿐만 아니라 상태를 시각화하여 관리할 수 있도록 도와주기 때문에 활용성에 큰 차이가 있다.
+
+위 관점에서 redux와 xstate는 비슷하다고 볼 수 있다. 하지만, redux는 상태를 관리하는 데에 그치지만, xstate는 FSM의 요소를 고려하여 상태를 관리할 수 있을 뿐만 아니라 상태를 시각화하여 관리할 수 있도록 도와주기 때문에 활용성에 큰 차이가 있다.
 
 ### XState의 특징
 
@@ -147,7 +148,7 @@ Welcome page가 날 환영해 주지 않는다. 그냥 바로 시작하자는 �
 yarn add xstate
 ```
 
-끝이다. 이제 바로 사용하면 된다. 사용 방법은 코드를 직접 구현해도 되지만, VISUALIZER를 사용하면 더 쉽고, 재밌게 상태를 관리하고 코드를 생성할 수 있으니까 VISUALIZER를 사용해 보자. (직접 구현하는 방법을 알고 싶으면 공식 문서의 [quick start 페이지](https://stately.ai/docs/quick-start)를 참고하자.)
+끝이다. 이제 바로 사용하면 된다. 사용 방법은 코드를 직접 구현해도 되지만, VISUALIZER를 사용하면 더 쉽고, 재밌게 상태를 관리하고 코드를 생성할 수 있으니까 VISUALIZER를 사용해 보자. (직접 구현하는 방법을 알고 싶다면 공식 문서의 [quick start 페이지](https://stately.ai/docs/quick-start)를 참고하자.)
 
 ### 사용
 
