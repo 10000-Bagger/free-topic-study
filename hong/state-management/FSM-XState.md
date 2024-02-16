@@ -162,7 +162,7 @@ VISUALIZER를 사용하려면, [XState VISUALIZER](https://xstate.js.org/viz/) �
 _위에서 정의한 AB 버튼 게임을 위한 description 작성. 과연 결과는..?_
 
 ![generated-with-ai](/hong/img/xstate/xstate-ai-tamplate-state-chart.png)
-_두둥.. 모든 조건은 완벽히 커버했다._
+_두둥.. 모든 조건이 완벽히 커버됐다._
 
 생성된 statechart를 보면, 게임에서 정의한 상태와 이벤트에 따라 다음 상태로 전이되는 것을 시각적으로 확인할 수 있다. 이제 이 statechart를 코드로 변환해 보자.
 
