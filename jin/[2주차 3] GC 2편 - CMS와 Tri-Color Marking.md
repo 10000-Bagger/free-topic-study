@@ -9,7 +9,7 @@ CMS 수집기는 Stop The World(STW) 시간을 최대한 줄이기 위해 설계
 
 <br>
 
-오른쪽 배열이 Root 객체들의 목록이고, 거기서 부터 타고 타고 들어가는 것이다. <br>
+왼쪽에 세로로 있는 배열이 Root 객체들의 목록이고, 거기서 부터 타고 타고 들어가는 것이다. <br>
 CMS는 Concurrent Mark & Sweep의 약자로, 최대한 STW 시간을 줄이고, Application가 작동중에 수거한다. (그래서 동시성 Mark & Sweep) CMS는 아래와 같은 방법을 통해 STW를 줄일 수 었었다. 
 
 <br>
