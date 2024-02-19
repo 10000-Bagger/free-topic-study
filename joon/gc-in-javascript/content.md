@@ -123,6 +123,8 @@ Major GC는 `Mark-Sweep-Compact` 알고리즘과 `Tri-Color` 알고리즘을 사
 
 - 메모리 단편화가 심한 페이지들을 재배치하여 추가 메모리를 확보한다.
 
+![mark-sweep-compact](8.gif)
+
 ### Tri-Color 알고리즘
 
 - GC 대상 객체를 선별하기 위한 알고리즘이다.
@@ -146,6 +148,40 @@ Major GC는 `Mark-Sweep-Compact` 알고리즘과 `Tri-Color` 알고리즘을 사
 [📌 출처](https://v8.dev/blog/concurrent-marking)
 
 ✅ 최종적으로 `white`로 marking된 객체들이 GC 대상이 된다.
+
+## [Orinoco](https://v8.dev/blog/trash-talk) Project
+
+Major GC가 실행될 때, 프로그램 자체가 멈추게 되는데 이를 `stop-the-world(STW)`라고 한다.
+
+`Orinoco`는 V8 Engine의 Major GC에서 STW 시간을 줄이고, 최적화하여 발전시키기 위한 프로젝트이다.
+
+해당 프로젝트를 통해 최신 GC에는 다음과 같은 기술들이 추가되었다.
+
+### Parallel
+
+기존 GC는 Main Thread 혼자 수행했지만, 이를 Helper Thread들과 나누어 수행하도록 변경하였다. <br/>
+Thread 간 동기화 문제를 처리하는 오버헤드가 발생하지만, STW 시간을 크게 줄였다.
+
+![Parallel GC](9.png)
+
+### Incremental
+
+Main Thread에서 GC 작업을 작은 단위로 나누어 프로세스 실행과 번갈아가며 중간중간 실행한다.
+
+GC를 수행하는 시간이 분산되어 좋은 UX를 제공할 수 있다고 하지만, 작업을 나누는 기준을 정하거나 할 때 문제가 발생할 수 있을 것 같다.
+
+![Incremental GC](10.png)
+
+### Concurrent
+
+Main Thread에서는 GC를 수행하지 않고, 온전히 Helper Thread들이 GC를 수행한다. <br/>
+STW가 사라지는 큰 장점이 있지만, 기술적으로 구현이 어렵다.
+
+![Concurrent GC](11.png)
+
+이 외에도 크롬 프로그램이 쉬는 idle time 중간중간 GC를 실행하는 `Idle-time GC` 등이 있다.
+
+---
 
 ## 나의 생각 (온전히 내 생각이라 GC 얘기가 많이는 없음 ㅠ 패스해도 됨!)
 
