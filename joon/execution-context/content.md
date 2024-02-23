@@ -150,16 +150,22 @@ a();
 
 우선, 실행 컨텍스트는 2개의 환경으로 나뉜다.
 
-1. Function Scope 변수인 `var`로 선언된 변수를 저장하는 `Variable Environment`
-2. Block Scope 변수인 `let, const`로 선언된 변수를 저장하는 `Lexical Environment`
+1. 함수 스코프 변수인 `var`로 선언된 변수를 저장하는 `Variable Environment`
+2. 블록 스코프 변수인 `let, const`로 선언된 변수를 저장하는 `Lexical Environment`
 
 위의 두 환경은 공통적으로 또다시 2개의 영역으로 나뉜다.
 
 1. 변수, 함수 이름과 관련된 **값**을 저장하는 `Environment Record`
-2. 상위 scope의 **Lexical Environment**를 가리키는 `Outer Environment Reference`
+2. 하위 scope의 **Lexical Environment**를 가리키는 `Outer Environment Reference` <br/>
+   (하위일수록 전역 컨텍스트에 가까움)
+
+물론, 전역 실행 컨텍스트는 더이상 하위 컨텍스트가 존재하지 않기 때문에 `Outer Environment Reference`는 `null`이 된다.
 
 구조는 같지만 두 환경에는 차이가 존재한다. <br/>
 `Variable Environment`은 스냅샷을 저장하여 변경 사항이 반영되지 않지만, `Lexical Environment`는 변경 사항이 반영된다는 것이다.
+
+따라서 구조는 다음 그림과 같다.
+![실행 컨텍스트의 구조](https://mblogthumb-phinf.pstatic.net/MjAyMjAyMjNfMjc0/MDAxNjQ1NTUwMjIxMDUx.nGjo0U33rrCpjg2Z2lER3YJn0LgzkPndhuH3CYoDeV4g.sQeiGYFMpwFvJAX2NC_0G2ntDpFUmzk2YGFXNfFL7SYg.PNG.dlaxodud2388/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-02-23_%EC%98%A4%EC%A0%84_2.16.56.png?type=w800)
 
 글로만 보면 뭔소린지 모르겠으니 그림으로 봐보자. <br/>
 아래와 같은 코드에 대한 실행 컨텍스트이다.
@@ -177,8 +183,35 @@ function Hi() {
 Hi();
 ```
 
-![context](2.png)
+![컨텍스트 구성 예시](https://mblogthumb-phinf.pstatic.net/MjAyMjAyMjNfMTQg/MDAxNjQ1NTUwMzE1NDAx.EfBq7ns6ja0JJt1ub4k4cMlMQdwRjJ_4S-ghf9gejYYg.GFY1AQGYI8dSAVkZcwEMQsXarxXyzoG6LTd-YRBQL5kg.PNG.dlaxodud2388/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7_2022-02-23_%EC%98%A4%EC%A0%84_2.18.17.png?type=w800)
 
 ## Hoisting이 일어나는 이유
+
+JavaScript를 접한 사람이라면 모두가 Hoisting에 대해 알고 있을 것이다.
+
+> 인터프리터가 코드를 실행하기 전에 함수, 변수, 클래스 또는 임포트(import)의 선언문을 해당 범위의 맨 위로 끌어올리는 것처럼 보이는 현상 - MDN
+
+즉, 변수나 함수의 선언이 마치 해당 스코프의 최상단으로 **끌어올려지는** 현상을 말한다. <br/>
+실제로 인터프리터가 코드의 내용을 진짜 끌어올리는 것이 아니라, 실행 컨텍스트가 생성되는 과정상 이러한 현상이 일어나는 것이다.
+
+그럼 실행 컨텍스트는 어떻게 만들어지길래 이런 현상이 일어날까?
+
+실행 컨텍스트가 만들어지는 과정은 다음 2가지로 나누어진다.
+
+1. Creation Phase
+2. Exectuion Phase
+
+먼저, `Creation Phase`는 **실행 컨텍스트에 대한 정의 과정**이다.
+
+해당 페이즈에서는 실행 컨텍스트의 `Variable Environment`와 `Lexical Environment`에 대한 정의가 이루어진다.
+
+즉, `var`, `let`, `const`로 선언된 명시적인 변수들에 대한 정의가 이루어지는 것이다. <br/>
+먼저, `var`로 선언된 변수는 이때 변수 `선언 단계`와 `초기화 단계`가 진행되어 메모리 공간을 할당 받고, 값을 `undefined`로 초기화한다. <br/>
+반면, `let`과 `const`로 선언된 변수의 경우, 변수 **`선언 단계`만** 진행되어 실행 컨텍스트에 **등록은 되었지만 값이 초기화되지 않는다.** <br/>
+따라서 `var`로 선언된 변수와 달리 `TDZ`라는 사각지대에 빠져, 접근시 `ReferenceError: Cannot access 'a' before initialization` 에러가 발생한다.
+
+이것이 바로 `Hoisting`이 발생하는 이유이다. <br/>
+그리고 `let`과 `const`로 선언된 변수도 선언 단계를 거치고 **초기화되지 않았을뿐**, `Hoisting`이 일어나지 않은 것은 아니다. <br/>
+만약, `Hoisting`이 일어나지 않았다면, 초기화가 아닌 정의가 되지않았다는 에러가 나타나기 떄문이다.
 
 ## Closure가 가능한 이유
