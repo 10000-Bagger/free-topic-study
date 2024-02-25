@@ -39,6 +39,21 @@
 
 
 ## 2. 리액티브 스트림즈
-
-
+- 리액티브 라이브러리를 어떻게 구현할지 정의한 표준 사양을 뜻한다.
+- 정확히는 데이터 스트림을 Non-Blocking이면서 비동기적인 방식으로 처리하기 위한 리액티브 라이브러리 표준 사양
+### 리액티브 스트림즈 구성 요소와 동작 방식
+| 컴포넌트         | 설명                                                                                                                 |
+|--------------|--------------------------------------------------------------------------------------------------------------------|
+| Publisher    | 데이터를 생성하고 통지(발행, 게시, 방출)하는 역할                                                                                      |
+| Subscriber   | 구독한 Publisher로부터 통지된 데이터를 전달받아서 처리하는 역할                                                                            |
+| Subscription | Publisher에 요청할 데이터의 개수를 지정하고, 데이터의 구독을 취소하는 역할                                                                     |
+| Processor    | Publisher와 Subscriber의 기능을 모두 가지고 있다. 즉, Subscriber로서 다른 Publisher를 구독할 수 있고, Publisher로서 다른 Subscriber가 구독할 수 있다. |
+![publisher-subscriber.jpg](img/publisher-subscriber.jpg)
+- Subscription.request를 통해 데이터 개수를 지정하는 이유
+  - 실제 Publisher와 Subscriber는 다른 스레드에서 비동기적으로 상호작용하기 때문에 Produce와 Consume 속도를 맞추기 위한 작업이다.
+### 코드로 보는 리액티브 스트림즈 컴포넌트
+#### (1) Publisher
+#### (2) Subscriber
+#### (3) Subscription
+#### (4) Processor
 ## 3. Blocking I/O와 Non-Blockinig I/O
