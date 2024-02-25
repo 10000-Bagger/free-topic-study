@@ -217,4 +217,58 @@ JavaScript를 접한 사람이라면 모두가 Hoisting에 대해 알고 있을 
 이후 `Execution Phase`에서는 `Creation Phase`에서 생성된 컨텍스트들을 바탕으로 코드를 실행하는 과정이다. <br/>
 즉, 선언된 변수들에 대해 실제 명시된 값을 할당하거나 함수를 실행한 결과를 변수에 저장한다.
 
+## Closure
+
+`Hoisting`에 이어 `Closure` 또한 JavaScript에서 매우 중요한 개념이다.<br/>
+그럼 `Closure`란 무엇일까?
+
+```javascript
+function outerFunction() {
+  let outerVariable = "I am outer!";
+
+  function innerFunction() {
+    console.log(outerVariable);
+  }
+
+  return innerFunction;
+}
+
+let closure = outerFunction();
+closure(); // 출력 결과: "I am outer!"
+```
+
+위 예시를 살펴보자.
+
+1. `outerFunction`은 `innerFunction`을 선언하고, 이러한 `innerFunction`을 반환하는 함수이다.
+2. `outerFunction`을 호출하여 `closure`라는 변수에 `innerFunction`를 참조시킨다.
+3. `closure`을 호출하여 함수를 실행하면 innerFunction이 수행되며 `I am outer!`가 출력된다.
+
+앞서 이야기한 실행 컨텍스트에 의하면 스코프가 생성되어 실행 컨텍스트가 생성되고 호출이 끝나고 나면 실행 컨텍스트와 관련된 메모리는 정리되어야 한다. <br/>
+하지만, 위의 예시에서 `outerFunction`이 실행되고 종료된 후에도 `closure`에 참조된 `innerFunction`은 `outerFunction` 내부에 선언된 `outerVariable`을 기억하며 정상동작한다. <br/>
+이것이 바로 `Closure`이다.
+
 ## Closure가 가능한 이유
+
+앞에서 말한 스코프중, 렉시컬 스코프는 함수가 선언될 때 스코프가 결정된다고 하였다. <br/>
+즉, 함수가 선언될 당시의 환경을 기억한다는 것이다. <br/>
+따라서, `innerFunction`이 **선언될 당시의 환경을 기억**하기 때문에 이러한 `Closure`가 가능한 것이다.
+
+그럼 `innerFunction`이 실행될 때는 `outerFunction`은 이미 종료된 상태인데, 어떻게 `innerFunction`이 어떻게 기억하고 `outerFunction`에 접근할 수 있을까? <br/>
+
+정답은 `Garbage Collection (GC)`와 관련이 있다. <br/>
+GC의 모토는 **참조되지 않는 메모리는 쓸모없다**는 것이다.
+따라서 `outerFunction`의 `Lexical Environment`에 **참조가 남아있어** GC의 대상이 되지 않았기 때문이다. <br/>
+
+`outerFunction`은 종료될 때, `innerFunction`을 반환한다. <br/>
+즉, `closure`가 이 `innerFunction`의 참조 변수이고, `closure`를 통해 `innerFunction`의 실행 컨텍스트가 생성되면 `outer Environment Reference`(하위 스코프의 `Lexical Environment`를 참조하는 포인터)가 `outerFunction`의 `Lexical Environment`를 참조해야 하기 때문에 GC의 대상이 되지 않는다. <br/>
+따라서 `innerFunction`은 이 Reference를 통해 `outerFunction`의 `Lexical Environment`에 접근하여 정상적으로 실행이 가능한 것이다.
+
+## 느낀 점
+
+처음 Hoisting과 Closure를 공부할 때에는 막상 외우기만 하려니 개념 자체가 이해도 안되고 어려웠다. <br/>
+이후, JavaScript의 동작 방식을 공부하다 Garbage Collection에 대해 알게 되었다. <br/>
+그리고 GC를 공부하며 Hoisting과 Closure의 원리에 대해 유추하는 과정을 거치고 학습을 하니 막상 외우는 것보다 이해가 훨씬 잘되었다. <br/>
+공부는 이렇게 하는 것인가보다를 매번 깨닫지만 마음만큼 잘 안되는 것 같다. <br/>
+이번 글을 계기로 계속 이렇게 원리를 파악하며 공부하는 습관을 들일 것이다. 꼭! <br/>
+
+혹시나 이번 글에 부족한 점, 이건 꼭 더 알아야한다! 하는 것들이 있으면 무한 의견 부탁드립니다!!!!
