@@ -53,7 +53,45 @@
   - 실제 Publisher와 Subscriber는 다른 스레드에서 비동기적으로 상호작용하기 때문에 Produce와 Consume 속도를 맞추기 위한 작업이다.
 ### 코드로 보는 리액티브 스트림즈 컴포넌트
 #### (1) Publisher
+```java
+public interface Publisher<T> {
+    void subscribe(Subscriber<? super T> var1);
+}
+```
+- 파라미터로 전달받은 Subscriber를 등록하는 역할의 subscribe()만 존재한다.
+- Kafka의 Pub/Sub 구조와 다르게 Broker의 존재가 없기 때문에 구독 등록 메서드가 Publisher 내부에 존재하는 점이 특징이다.
+
 #### (2) Subscriber
+```java
+public interface Subscriber<T> {
+    void onSubscribe(Subscription var1);
+
+    void onNext(T var1);
+
+    void onError(Throwable var1);
+
+    void onComplete();
+}
+```
+- onSubscribe(Subscription var1): Subscription 객체를 바탕으로 구독 시작 시점에 `요청할 데이터 개수 지정`또는 `구독을 해지` 처리를 하는 역할
+- onNext(): Publisher가 통지한 데이터를 처리하는 역할
+- onError(): onNext() 과정에서 에러가 발생했을 때 에러를 처리하는 역할
+- onComplete(): Publisher가 데이터 통지를 완료했음을 알릴 때 사용된다. 통지 완료 후 후처리 로직이 들어갈 수도 있다.
 #### (3) Subscription
+```java
+public interface Subscription {
+    void request(long var1);
+
+    void cancel();
+}
+```
+- request(long n): 구독 데이터의 개수를 요청하는 역할
+- cancel(): 구독을 해지하는 역할
 #### (4) Processor
+```java
+public interface Processor<T, R> extends Subscriber<T>, Publisher<R> {
+}
+```
+- Processor의 경우 Subscriber와 Publisher를 상속하고 있다.
+- 즉, Processor만의 기능은 따로 없고 Subscriber와 Publisher의 역할을 모두 수행할 수 있다는 특징이 있다.
 ## 3. Blocking I/O와 Non-Blockinig I/O
