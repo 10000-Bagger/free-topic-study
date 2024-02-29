@@ -1,3 +1,5 @@
+[PR에도 GC 기본 관련 추가 설명이 있습니다](https://github.com/10000-Bagger/free-topic-study/pull/18)
+
 ## 1. 자유로운 JVM을 봐. 자유로워 <br>
 
 오라클은 JVM에 대해 그리 많은 것을 정해두지 않는다. **"스펙"으로서** 존재한다. <br>
