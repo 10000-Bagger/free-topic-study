@@ -36,7 +36,7 @@
  
 #### 위키피디아 사례
 
-<img src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/fbb3d3f4-9be5-47aa-b377-ce91be875309" width="500px" />n
+<img src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/fbb3d3f4-9be5-47aa-b377-ce91be875309" width="500px" />
 
 - 위키피디아 모바일에서 `_enabled` 메서드의 실행 시간이 가장 길었음
 - 이 메서드는 사이트 사이즈 조절을 수행
@@ -64,3 +64,58 @@ function _enable( $container, prefix, page, isClosed ) {
 - 링크가 많은 경우, 4000개의 링크가 열리고 200ms가 소요되는 경우가 있었음
 - 결국 이 메서드를 삭제 했다고 함
   - 해결방식이 약간 짜침 🧑‍🦲 
+
+#### 2. 자바스크립트 최적화하기
+
+- 위키피디아 사례
+
+<img src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/5e81dbab-e784-470f-9523-0981fb994d63" width="500px" />
+
+- `initMediaViewer` 메서드가 실행되는데 100ms가 소요
+- 이 메서드는 썸네일에 클릭 이벤트 리스너를 추가해서, 클릭하면 미디어 뷰어가 열리는 동작을 수행
+
+``` js
+/**
+ * Event handler for clicking on an image thumbnail
+ *
+ * @param {jQuery.Event} ev
+ * @ignore
+ */
+function onClickImage(ev) {
+  ev.preventDefault();
+  routeThumbnail($(this).data("thumb"));
+}
+ 
+/**
+ * Add routes to images and handle clicks
+ *
+ * @method
+ * @ignore
+ * @param {jQuery.Object} [$container] Optional container to search
+ * within
+ */
+function initMediaViewer($container) {
+  currentPageHTMLParser
+    .getThumbnails($container)
+    .forEach(function (thumb) {
+      thumb.$el.off().data("thumb", thumb).on("click", onClickImage);
+    });
+}
+```
+
+- 위키백과 문서 편집자는 수천 개의 이미지가 포함된 문서를 만들 수 있음
+- 이 코드를 실행하면 이미지가 많은 페이지의 경우 실행하는 데 100ms 이상이 걸리고 페이지의 TBT가 증가할 수 있음
+
+- 해결 방식: 이벤트 위임 사용
+   - 이벤트 위임: 이벤트 리스너를 부모에 부착
+   - 즉, 모든 이미지가 포함된 하나의 컨테이너 요소에 하나의 클릭 이벤트 리스너를 추가하도록 initMediaViewer 메서드를 수정
+ 
+### 결론
+- 위키피디아는 위 두 단계를 거쳐 TBT가 200ms 감소
+
+---
+
+개인적으로 이 글을 읽으면서 느꼈던 점은
+- 크게 엄청난 일을 하지 않았는데 성능이 변경된 점
+- 사소한 변경 사항으로 웹사이트 전반적인 성능에 영향을 미칠 수 있었던 점
+- 결국 측정을 잘하고 -> 어느 부분이 문제인지 인지 후 개선하는 것이 중요하다~
