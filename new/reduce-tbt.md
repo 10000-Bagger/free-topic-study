@@ -27,3 +27,40 @@
 - 100ms 작업은 50ms보다 50ms 더 길기 때문에 TBT에 50ms 포함
 
 =>  TBT: 30ms + 50ms = 80ms
+
+### TBT 줄이기
+#### 1. 불필요한 자바스크립트 줄이기
+- 메인스레드에서 실행되는 작업인 HTML 파싱, 페인팅, 가비지 콜렉팅 등이 있지만
+- 가장 로딩을 오래 걸리게 하는 것은 자바스크립트
+  - [자바스크립트 프레임워크가 얼마나 많은 리소스를 사용하는지에 관련한 글](https://timkadlec.com/remembers/2020-04-21-the-cost-of-javascript-frameworks/)
+ 
+#### 위키피디아 사례
+
+<img src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/fbb3d3f4-9be5-47aa-b377-ce91be875309" width="500px" />n
+
+- 위키피디아 모바일에서 `_enabled` 메서드의 실행 시간이 가장 길었음
+- 이 메서드는 사이트 사이즈 조절을 수행
+- 내부 제이쿼리의 `.on("click")` 호출이 오래 걸림
+
+``` js
+function _enable( $container, prefix, page, isClosed ) {
+  ...
+
+  var $link = $container.find("a:not(.reference a)");
+  $link.on("click", function () {
+    if (
+      $link.attr("href") !== undefined &&
+      $link.attr("href").indexOf("#") > -1
+    ) {
+      checkHash();
+    }
+  });
+  util.getWindow().on("hashchange", function () {
+    checkHash();
+  });
+}
+```
+- 대부분의 링크에 클릭 이벤트 리스너가 추가됨
+- 링크가 많은 경우, 4000개의 링크가 열리고 200ms가 소요되는 경우가 있었음
+- 결국 이 메서드를 삭제 했다고 함
+  - 해결방식이 약간 짜침 🧑‍🦲 
