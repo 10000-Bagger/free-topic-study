@@ -1,5 +1,7 @@
 # 리액티브 프로그래밍
-## 1. 리액티브 시스템이란?
+## 1. 리액티브 시스템과 리액티브 프로그래밍
+
+### (1) 리액티브 시스템이란?
 - Reactive라는 단어에서도 알 수 있듯이 반응을 잘 하는 시스템을 뜻한다.
 - 반응을 잘 한다는 것은 `클라이언트의 요청에 즉각적으로 응답함으로써 지연 시간을 최소화하는 것`
 - 핵심 가치 3가지
@@ -10,7 +12,7 @@
     - VALUE: 시스템의 처리량을 자동으로 확장/축소하는 탄력성을 확보함으로써 즉각적으로 응답 가능한 시스템을 구축할 수 있음을 의미
 - 빠른 응답성을 바탕으로 확장이 용이한 시스템을 구축하는데 활용 가능
 
-## 2. 리액티브 프로그래밍이란?
+### (2) 리액티브 프로그래밍이란?
 - 리액티브 시스템을 구축하는데 필요한 프로그래밍 모델
 - Non-Bloccking I/O 방식의 통신을 사용
 - 특징 2가지
@@ -25,29 +27,31 @@
         - data streams - 데이터가 지속적으로 발생한다는 특징
         - propagation of change - 지속적으로 데이터가 발생할 때마다 이벤트를 발생시키면서 데이터를 계속 전달한다는 특징
 
-## 3. 리액티브 프로그래밍 코드 구성
-### Publisher
+### (3) 리액티브 프로그래밍 코드 구성
+#### Publisher
 - 입력으로 들어오는 데이터를 제공하는 역할
-### Subscriber
+#### Subscriber
 - Publisher가 제공한 데이터를 전달 받아서 사용하는 주체
-### Data Source / Data Stream
+#### Data Source / Data Stream
 - Data Source: 최초로 생성되는 데이터 그 자체
 - Data Stream: Publisher의 입력으로 들어오는 데이터 형태
 - 둘은 같다고 봐도 무방하다
-### Operator
+#### Operator
 - Publisher와 Subscriber 사이에서 적절한 가공처리를 담당하는 주체
 
 
 ## 2. 리액티브 스트림즈
 - 리액티브 라이브러리를 어떻게 구현할지 정의한 표준 사양을 뜻한다.
 - 정확히는 데이터 스트림을 Non-Blocking이면서 비동기적인 방식으로 처리하기 위한 리액티브 라이브러리 표준 사양
-### 리액티브 스트림즈 구성 요소와 동작 방식
+### (1) 리액티브 스트림즈 구성 요소와 동작 방식
 | 컴포넌트         | 설명                                                                                                                 |
 |--------------|--------------------------------------------------------------------------------------------------------------------|
 | Publisher    | 데이터를 생성하고 통지(발행, 게시, 방출)하는 역할                                                                                      |
 | Subscriber   | 구독한 Publisher로부터 통지된 데이터를 전달받아서 처리하는 역할                                                                            |
 | Subscription | Publisher에 요청할 데이터의 개수를 지정하고, 데이터의 구독을 취소하는 역할                                                                     |
 | Processor    | Publisher와 Subscriber의 기능을 모두 가지고 있다. 즉, Subscriber로서 다른 Publisher를 구독할 수 있고, Publisher로서 다른 Subscriber가 구독할 수 있다. |
+
+
 ![publisher-subscriber.jpg](img/publisher-subscriber.jpg)
 - Subscription.request를 통해 데이터 개수를 지정하는 이유
   - 실제 Publisher와 Subscriber는 다른 스레드에서 비동기적으로 상호작용하기 때문에 Produce와 Consume 속도를 맞추기 위한 작업이다.
@@ -94,4 +98,48 @@ public interface Processor<T, R> extends Subscriber<T>, Publisher<R> {
 ```
 - Processor의 경우 Subscriber와 Publisher를 상속하고 있다.
 - 즉, Processor만의 기능은 따로 없고 Subscriber와 Publisher의 역할을 모두 수행할 수 있다는 특징이 있다.
-## 3. Blocking I/O와 Non-Blockinig I/O
+
+### (2) 리액티브 스트림즈 관련 용어 정리
+#### Signal
+- Publisher와 Subscriber간에 주고받는 상호작용
+- onSubscribe, onNext, onComplete, onError, request, cancel 메서드를 Signal이라 표현한다.
+- onSubscribe, onNext, onComplete, onError: Publisher가 Subscriber에게 보내는 Signal
+- request, cancel: Subscriber가 Publisher에게 보내는 Signal
+
+#### Demand
+- Subscriber가 Publisher에게 요청한 데이터이며 Publisher가 아직 전달하지 않은 데이터를 뜻한다.
+
+#### Emit
+- Publisher가 Subscriber에게 데이터를 전달하는 것을 의미한다.
+- 즉, 데이터를 내보낸다는 의미 정도로 이해하면 됨
+
+#### Upstream/Downstream
+```java
+public static void main(String[] args) {
+    Flux
+        .just(1, 2, 3, 4, 5, 6, 7)
+        .filter(n -> n % 2 == 0)
+        .map(n -> n * 2)
+        .subscribe(System.out::println)
+}
+```
+- 리액티브 프로그래밍에서는 위와 같은 메서드 체인 방식으로 코드가 작성된다.
+- 메서드 체인으로 작성될 수 있는 이유는 각 메서드의 반환 객체가 동일하게 Flux이기 때문이다.
+- 이때 특정 Flux를 기준으로 자신보다 상위에 있는 Flux는 Upstream, 하위에 있는 Flux는 Downstream이 된다.
+
+#### Sequence
+- Publisher가 emit하는 데이터의 연속적인 흐름
+- 즉, 다양한 Operator로 생겨난 데이터의 연속적인 흐름을 뜻한다.
+
+#### Operator
+- 위 예시 코드에서 사용된 연산자(just, filter, map)들을 통틀어 Operator로 지친한다.
+
+#### Source
+- 최초라는 의미로 사용되며 Original이라고도 불린다
+- 즉, 가장 먼저 생성된 무언가로 생각하면 될 것 같다.
+
+### (3) 리액티브 스트림즈 구현 규칙
+
+### (4) 리액티브 스트림즈 구현체
+
+##  Blocking I/O와 Non-Blockinig I/O
