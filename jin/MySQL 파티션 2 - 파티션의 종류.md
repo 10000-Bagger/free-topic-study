@@ -150,4 +150,176 @@ ALTER TABLE employees ALGORITHM=INPLACE, LOCK=SHARED,
     PARTITION p23 VALUES LESS THAN (2024)
   );
 ```
+# 2. List Partition
+List Partition은 레인지 파티션과 거의 비슷하다. 다른 점은 한 파티션에 들어가게 될 키값들의 "범위"를 지정하는 대신 "리스트"를 정의하는 방식이라는 점이다. <br>
+리스트를 정의한다니까 자료구조 리스트가 떠올라서 말이 모호한데, 장보기 리스트를 짜는 것 처럼 파티션 키 리스트를 짜면 된다. <br>
+예를 들어 레인지 파티션은 `3월 ~ 6월 생은 '봄' 그룹에 들어가세요`와 같이 "범위"로 정의했다면, List Partition은 `1월, 5월, 11월 생들은 그룹 A에 들어가세요`와 같이 하나 하나 지정하는 것이 특징이다. 예를 들어 아래와 같이 지정할 수 있다.
+```sql
+
+...
+  ) PARTITION BY LIST (category_id) (
+  
+  ...
+
+  PARTITION A VALUES IN (1, 5, 11),
+  
+  ...
+
+  );
+```
+
+보시다 싶이 하나 하나 지정해줘야 한다는 점 외에는 레인지 파티션과 비슷하다. <br>
+**또 하나의 가장 큰 차이는 `MAXVALUE` 파티션을 정의할 수 없다는 점과 NULL이 들어갈 곳을 지정할 수 있다는 것이다.** <br> 
+
+## 2.1 리스트 파티션의 용도
+테이블이 아래와 같은 특성이 있을 때 리스트 파티션이 효과적이다.
+1. 파티션 키 값이 고정적일때, <br> ex) 카테고리, 코드 값 등 연속적이지 않은 값..
+2. 키 값이 연속되지 않고, 정렬 순서와 무관한 방식으로 파티션을 해야 하는 경우
+3. 파티션 키 값을 기준으로 레코드의 건수가 균일하고, 검색 조건에 파티션 키가 자주 사용되 때 <br> 예를 들어 쇼핑 카테고리별로 상품 갯수가 균일하고, 카테고리로 검색이 많다면 편리하겠쥬?
+
+
+## 2.2 쿼리 쿼리 
+### 생성
+```sql
+CREATE TABLE `tb_list_table` (
+  id int not null auto_increment,
+  name varchar(10),
+  dept_no int not null,
+  primary key(id,dept_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  PARTITION BY LIST(dept_no) (
+  PARTITION P_ACCOUNTING VALUES IN(1, 9),
+  PARTITION P_RESEARCH VALUES IN(2, 6, 7),
+  PARTITION P_SALES VALUES IN(4, 5, 8, NULL)
+);
+```
+
+Range 때와 다르게 `PARTITION BY LIST`로 정의 하였다. <br>
+`VALUES IN()` 안에 리스트 형식으로 값을 넣었다. 또한, NULL이 들어갈 파티션을 정의할 수 있다. <br>
+아래와 같이 문자열로 지정하는 것도 가능하다.
+
+```sql
+  ...
+
+) PARTITION BY LIST(category) (
+  PARTITION P_ACCOUNTING VALUES IN('TV'),
+  PARTITION P_RESEARCH VALUES IN('Notebook', 'Desktop'),
+  PARTITION P_SALES VALUES IN('Tennis', 'Soccer')
+);
+```
+
+### 분리와 병합
+결국 Range Partition에서 `LESS THAN` 대신 `VALUES IN`을 사용한다는 것 외에는 전부 똑같이 `REORGANIZE PARTITON`을 사용하면 된다. <br>
+주의할 점은 역시나 비슷하다. `MAXVALUE` 파티션을 정의할 수 없다는 점과 NULL이 들어갈 곳을 지정할 수 있다는 것이다. <br> 
+
+# 3. Hash Partition
+
+Hash Partition은 해시 함수로 레코드가 들어가게 될 파티션이 결정된다. <Br>
+사실 "파티셔닝", "샤딩" 개념을 배울 때 항상 이 파티션을 예시로 배웠던 것 만큼 대부분에게 익숙할듯 하고, 실무 SNS 서비스에서도 비슷한 형태로 자주 쓰이는 것 같다. <Br> 
+
+MySQL 해시 함수는 **사용자가 정의한 파티션 키나 표현식 값에 "파티션 갯수"를 나눈 값으로 파티션을 결정한다.** `표현식 % 파티션 갯수` 뭐 별거 없다. <br>
+이렇게 계산하는 만큼, **사용자가 정의한 파티션 키나 표현식의 값은 정수 타입이거나, 정수 타입을 반환하는 표현식이여야 한다.** <br>
+
+파티션의 추가 삭제에 대한 엄청난 재분배가 일어날 수 밖에 없다. 예를 들어 이제까지 파티션을 5개만 사용중이었는데, 6개가 되어 버린다면, 앞으로 값을 찾을 때 `파티션 키 % 6`을 사용해 값을 찾게 될 것이다. <br>
+만약 재분배가 없다면 기존 값을 찾을 수 없게 된다! 예를 들어 id값이 11인 값을 찾고 싶을 때, 파티션이 5개일 때는 `11 % 5 = 1`인 `1번 파티션`에 데이터가 저장 되어 있을텐데, 파티션 갯수가 6개라면 `11 % 6 = 5`인 `5번 파티션`에 저장되어 있는게 정상이다. <br>
+따라서, 파티션이 하나 늘고 줄을 때마다 재분배가 필요하고, 재분배가 적을 것으로 예상될 때 사용하던지, 다른 대안을 생각해야 한다. ex) [안정해시](https://binux.tistory.com/119) <Br>
+
+
+## 3.1 용도
+해시 파티션은 아래와 같은 테이블에서 적합하다.
+1. **Range Partition이나 List Partiton으로 테이블을 균등하게 나누기 어렵다.** <br> 예를 들어 카테고리별로 상품을 나누는데, "치킨" 카테고리에만 상품이 엄~청 많고 "취두부" 카테고리에는 상품이 별로 없을 수도 있다. 이 경우 어떤 테이블은 뚱뚱해지고, 어떤 테이블은 날씬해진다. 이 경우 차라리 Hash 해버리면, 오히려 균등할 수도 있다.
+2. **테이블의 모든 레코드가 비슷한 사용 빈도를 보이지만, 테이블이 너무 클 때** (사실상 그냥 테이블이 큰 경우)
+
+<br> <br>
+
+대표적으로 회원 테이블! 회원 정보는 가입 일자가 오래 되었다고 덜 사용되지도, 최근 가입 회원이라고 더 자주 사용하지도 않는다. 취미, 사는 지역 등 어떤 "칼럽 값" 하나로 사용이 빈번하고 많고가 결정되진 않는다. 결국 [유명인 빼고는](https://www.rkenmi.com/posts/sharding-user-ids-of-celebrities) 균등하게 사용이 된다. <br>
+
+## 3.2 파티션 생성
+```sql
+  CREATE TABLE employees (
+  
+  ...
+
+  ) PARTITION BY HASH (id) PARTITIONS 4 (
+
+    PARTITON p0 ENGINE=INNODB,
+    PARTITON p1 ENGINE=INNODB,
+    PARTITON p2 ENGINE=INNODB
+  );
+
+```
+
+`PARTITION BY HASH`로 해시 파티션임을 지정하고, id값을 기준으로 함을 명시했다. 그리고 `PARTITIONS 4`라는 키워드로 4개의 파티션을 생성할 것을 정의했다. 아래는 파티션의 이름을 명시하기 위해 적었지만, 원래도 p0, p1, p2와 같이 알아서 지정된다. <br> 사실 해시 파티션에선 특정 파티션을 지정해서 삭제하거나 병합할 일이 별로 업식 때문에, 이름을 짓는 것이 별로 의미는 없음
+
+
+## 3.3 파티션의 추가
+죽음의 재분배 Time..을 수반한 파티션 추가. 명령어 자체는 간단하다.
+<br>
+
+1. 파티션 1개 추가 + 파티션 이름 부여
+```sql
+ALTER TABLE employees ALGORITHM=INPLACE, LOCK=SHARED,
+    ADD PARTITION(PARTITION p5 ENGINE=INNODB);
+```
+
+<Br>
+
+2. 파티션 6개 추가 + 이름 부여 X
+```sql
+ALTER TABLE employees ALGORITHM=INPLACE, LOCK=SHARED,
+    ADD PARTITION PARTITIONS 6;
+```
+
+<br>
+
+위 명령어들을 입력하면, 모든 파티션에 있는 데이터들이 재분배된다. 기존 테이블들에 읽기 잠금이 걸리게 되고, 많은 부하가 발생된다.
+
+<Br>
+
+## 3.4 나머지 연산들
+### 삭제
+해시 파티션은 파티션 단위로 레코드를 삭제할 수 없다. 단순히 DROP 명령어를 쓸 수 없다. 애초에 의미 없이 해쉬값으로만 나눈 것이기 때문에, 지우는 거슨 의미도 없고 해서도 안된다. 거기에 뭐가 있는줄 알고?
+
+
+<Br>
+
+### 분할 - 없음
+### 병합- 없다!!
+단, 파티션 갯수를 줄이고, 재구성할 수 있다.
+
+```sql
+ALTER TABLE employees ALGORITHM=INPLACE, LOCK=SHARED
+    COALESCE PARTITION 1;
+```
+
+이렇게 입력한다면 **파티션이 1개 줄어든다! 1개가 되는 것이 아님 ㅇㅇ**
+
+### 주의사항
+1. 특정 파티션만 삭제할 수는 없다 `DROP PARTITION`
+2. 새로운 파티션을 추가, 삭제 하는 작업은 전면 재배치가 일어난다..
+3. 해시 파티션은 다른 파티션과는 아예 방식이 다르기 때문에, 용도가 적합한지 확실히 해라.
+
+# 4. Key Partition
+
+Key Partition은 Hash Partition과 사용법이나 특성이 같다 <br> 
+Hash Partition은 사용자가 파티션 키나 표현식을 통해 해시 값 계산을 어느 정도 명시할 수 있다. MySQL 서버는 그 결과값에 MOD를 적용하는 것이다. Key Partition은 조금 다르다. 
+
+다만, Key Partition은 사용자가 `파티션 키 값`까지만 딱 정할 수 있고, MySQL이 해시함수인 `MD5()`를 적용한다. 그 다음 또 MOD값을 적용한다. **대신 Hash Partition과 다르게 정수형이 아니어도 된다는 장점이 있다.**
+
+<br>
+
+쿼리는 아래와 같이 작성한다
+
+```sql
+PARTITION BY KEY() PARTITIONS 2; 
+```
+
+1. `PARTITONS 2`로 파티션 갯수를 지정할 수 있다.
+2. 괄호의 내용을 비워 두는 경우 Primary Key의 모든 칼럼이 파티션 키가 된다.
+3. 프라이머리 키가 없는 경우 유니크 키가 존재한다면 파티션 키로 사용된다.
+4. 프라이머리 키나, 유니크 키를 구성하는 컬럼 중에서 일부를 선택해 파티션 키로 설정할 수 있다.
+5. 유니크 키를 파티션 키로 사용할 때, 해당 유니크 키는 반드시 NOT NULL이어야 한다.
+
+<Br>
+
 
