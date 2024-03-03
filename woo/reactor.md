@@ -140,6 +140,36 @@ public static void main(String[] args) {
 
 ### (3) 리액티브 스트림즈 구현 규칙
 
+#### Publisher 구현 규칙
+- 개수 제한: Subscriber로 보내는 onNext signal의 개수는 Subscriber가 요청한 데이터 개수보다 항상 작거나 같아야 한다.
+- 종료 조건: Subscriber가 요청한 것보다 적은 수의 onNext signal을 보내고 onComplete 또는 onError를 호출하여 구독을 종료할 수 있다.
+- 오류 처리: 데이터 처리에 실패할 경우 onError signal을 보내야 한다.
+- 성공 처리: 데이터 처리가 성공적으로 종료되면 onComplete signal을 보내야 한다.
+- 취소 조건: Publisher가 onError 또는 onComplete signal을 보내는 경우 해당 구독은 취소된 것으로 간주되어야 한다.
+- 취소 이후 동작: 
+  - 종료 상태 signal(onError, onComplete)을 받으면 더 이상 signal이 발생ㅎ되지 않아야 한다.
+  - 구독 취소 이후에 Subscriber는 signal을 받는 것을 중지해야 한다.
+
+#### Subscriber 구현 규칙
+- 구독 조건: onNext signal을 수신하기 위해 request(n)을 통해 Demand signal을 Publisher에게 보내야 한다.
+- 종료 메서드 조건: onComplete(), onError(Throwable t) 메서드에서 Subscription, Publisher의 메서드를 호출해서는 안 된다.
+- 종료 메서드 역할: onComplete(), onError(Throwable t) signal 수신 이후는 구독이 취소된 것으로 간주해야 한다.
+- cancel()의 역할: 구독이 필요하지 않은 경우 cancel() 메서드를 호출해야 한다.
+- onSubscribe() 호출 제한: Subscriber.onSubscribe()는 지정된 Subscriber에 대해 최대 1번만 호출되어야 한다.
+  - 동일 구독자는 최대 1번만 구독 가능하다는 의미
+
+#### Subscription 구현 규칙
+- Subscription.request: 
+  - Subscriber가 onNext, onSubscriber 내에서 동기적으로 Subscription.request를 호출하도록 허용해야 한다.
+  - 구독 취소 이후의 request(long n)은 효력이 없어야 한다.
+  - 구독 취소 이전에 request(long n)의 n이 0보다 작거나 같으면 IllegalArgumentException과 함께 onError signal을 보내야 한다.
+- Subscription.cancel():
+  - 구독 이후의 cancel() 호출은 효력이 없어야 한다.
+  - 구독이 취소되지 않은 동안에는 Publisher가 Subscriber에게 보내는 signal을 결국 중지하도록 요청하는 역할을 한다.
+  - 또한 Publisher가 해당 Subscriber에 대한 참조를 삭제하도록 요청해야 한다.
+- cancel(), request()호출에 대한 응답으로 예외를 던질 수 없다.
+- 구독은 무제한 수의 request 호출이 가능해야 하고, 2^62-1rodml Demand를 지원해야 한다.
+
 ### (4) 리액티브 스트림즈 구현체
 
 ##  Blocking I/O와 Non-Blockinig I/O
