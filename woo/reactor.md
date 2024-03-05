@@ -171,5 +171,10 @@ public static void main(String[] args) {
 - 구독은 무제한 수의 request 호출이 가능해야 하고, 2^62-1rodml Demand를 지원해야 한다.
 
 ### (4) 리액티브 스트림즈 구현체
-
-##  Blocking I/O와 Non-Blockinig I/O
+- 앞서 설명했듯이 리액티브 스트림즈는 리액티브 라이브러리를 어떻게 구현할지 정의한 표준 사양을 뜻한다.
+- 때문에 리액티브 스트림즈 사양을 구현한 구현체는 여럿이 존재한다.
+- 종류
+  - RxJava: .Net 환경의 리액티브 확장 라이브러리를 넷플릭스에서 Java언어로 만든 라이브러리이다.
+  - Project Reactor: Spring Framework 팀에서 주도적으로 개발한 리액티브 스트림즈 구현체 
+  - Akka Streams: Akka는 JVM상에서 동시성과 분산을 단순화해주는 오픈소스 툴킷이다. 
+  - Java Flow API: Java 9에서 지원을 시작한 리액티브 스트림즈 구현체.
