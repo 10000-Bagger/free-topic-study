@@ -49,4 +49,53 @@
 
 
 ### 5. redirect-uri로 요청을 보낼 때 session id(JESSIONID)가 설정되지 않는 이유
-- 왜지..?
+- 결국 이 문제는 browser에서 cookie를 set하지 않아서 발생하는 문제이다.
+- 때문에 브라우저에서 cookie를 set하지 않는 이유 확인을 프론트 팀에 요청하고 해결 방식을 찾아보았다.
+
+## 해결 시도
+### 1. Custom Cookie 기반의 AuthorizationRequestRepository 구현
+- 관련 오류를 검색해보면 나오는 해결 방법이다.
+  - (Spring Security OAuth2 authorization_request_not_found 에러)[https://velog.io/@smc2315/authorization-request-not-found]
+- 혹시나 하는 마음에 적용해보았지만, 결과는 실패이다.
+- 사실 생각해보면 seesion id 또한 cookie값인데 cookie 기반으로 동작하는 건 모두 같은 문제가 발생할 수밖에 없다.
+
+### 2. state 기반의 AuthorizationRequestRepository 구현
+- 결국 문제를 해결하기 위해서는 아래 조건을 만족하는 무언가를 찾아야 한다.
+  - 1번: 소셜 로그인 페이지 redirect http request / 2번: 소셜 로그인 성공 후 callback http request 2개의 요청에서 서버로 동일하게 전달되는 값이 필요하다.
+  - 이 값은 Cookie값이면 안 된다.
+- 위 조건을 만족시키는 값이 state이다.
+  - state는 1번 요청이 들어왔을 때 backend server에서 생성하는 값이기 때문에 1번 요청에서 server는 값을 가지고 있다.
+  - 또한 2번 요청에서 state는 url query string으로 값이 들어온다.
+- 때문에 아래와 같이 state값을 key로, OAuth2AuthorizationRequest를 value로 하는 InMemory 저장소를 두고 AuthorizationRequestRepository를 구현하였다.
+- 다행히 아직까지는 `authorization_request_not_found`오류가 발생하지 않고 있다.
+```java
+@Component
+class StateOAuth2AuthorizationRequestRepository() : AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
+    private val oauthRequestStorage: Cache<String, OAuth2AuthorizationRequest> = Caffeine.newBuilder()
+        .expireAfterWrite(60L, TimeUnit.SECONDS)
+        .build()
+
+    override fun loadAuthorizationRequest(request: HttpServletRequest): OAuth2AuthorizationRequest? {
+        return oauthRequestStorage.getIfPresent(getStateParameter(request))
+    }
+
+    override fun saveAuthorizationRequest(
+        authorizationRequest: OAuth2AuthorizationRequest?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ) {
+        if (authorizationRequest != null) {
+            oauthRequestStorage.put(authorizationRequest.state, authorizationRequest)
+        }
+    }
+
+    override fun removeAuthorizationRequest(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): OAuth2AuthorizationRequest? {
+        return loadAuthorizationRequest(request)
+    }
+
+    private fun getStateParameter(request: HttpServletRequest): String = request.getParameter("state")
+}
+```
