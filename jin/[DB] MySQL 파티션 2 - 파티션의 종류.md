@@ -1,4 +1,6 @@
+[Pull Request](https://github.com/10000-Bagger/free-topic-study/pull/52)
 # MySQL 파티션의 종류
+
 
 MySQL에서는 기본적인 파티션 4가지를 제공해준다.
 
