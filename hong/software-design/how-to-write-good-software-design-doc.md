@@ -1,4 +1,4 @@
-# 좋은 소프트웨어 설계문서 잘 만드는 방법 조사
+# How to Write A Good Software Design Documentation
 
 ## Why write a design document?
 
