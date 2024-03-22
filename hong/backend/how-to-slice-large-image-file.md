@@ -13,13 +13,22 @@
 - **ImageIO (Java)**
 
   - ImageIO 라이브러리에서 허용하는 최대 이미지 사이즈는 **2,147,483,647 pixels** 이다. (2GB)
+ 
+![스크린샷 2024-03-17 183337](https://github.com/10000-Bagger/free-topic-study/assets/34956359/d044f4a4-ddac-490e-8ccb-2a4fe1cfb78b)
+
 
 - **Pillow (Python)**
 
   - Pillow 라이브러리에서 허용하는 최대 이미지 사이즈는 **178,956,970 pixels** 이다.
 
+![스크린샷 2024-03-17 182407](https://github.com/10000-Bagger/free-topic-study/assets/34956359/5e4631d6-6500-429a-88e3-d6da1c5688a8)
+
+
 - **OpenCV (Python)**
   - OpenVC 라이브러리에서 허용하는 최대 이미지 사이즈는 **1,073,741,824 pixels** 이다.
+ 
+![스크린샷 2024-03-17 182436](https://github.com/10000-Bagger/free-topic-study/assets/34956359/4d27f703-bbb1-40df-b3e2-68bab647a8c0)
+
 
 ## 문제 해결
 
