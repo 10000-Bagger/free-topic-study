@@ -211,3 +211,7 @@ Domain Driven Design
 - API 설계서: Micro service의 API 명세서
 - Message 설계서: 비동기 메시징 설계서. 마이크로 서비스 간 통신 방법을 기술
 - 마이크로 서비스 패턴 적용 설계서: 마이크로 서비스의 최적 아키텍처 설계를 위한 다양한 패턴 적용 방법 기술.
+
+
+## Reference
+DDD 핵심만 빠르게 이해하기: https://happycloud-lee.tistory.com/94
