@@ -199,7 +199,8 @@ Domain Driven Design
 
 7) Tactical Design 객체 관계도
 
-![Untitled](https://prod-files-secure.s3.us-west-2.amazonaws.com/69c1083f-6973-43ff-a2b5-99157e550b98/cae71482-73c8-49e7-b2d9-67149c3a2666/Untitled.png)
+![스크린샷 2024-03-24 195704](https://github.com/10000-Bagger/free-topic-study/assets/34956359/dfa916e3-a264-4cb3-b312-40e24b1c9d0d)
+
 
 8) Tactical Design 결과물
 
