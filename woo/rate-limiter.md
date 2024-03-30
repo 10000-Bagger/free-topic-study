@@ -29,3 +29,11 @@
 - 모든 요청은 FIFO Queue에 담겨 미리 규정된 속도로 처리된다.
 - FIFO Queue가 가득차지 않았다면 요청을 받아들인다.
 - FIFO Queue가 가득차 있다면 클라에게 에러를 반환한다.
+- 구현해보기
+    - [Leaky Bucket 알고리즘을 활용한 Rate Limiter](https://github.com/egg528/rate-limiter-learning/pull/1)
+- 장점
+    - 일정한 속도의 처리량을 유지할 수 있다
+    - 구현이 정말 간단하다.
+    - Queue의 Size가 정해져 있기 때문에 메모리 효율적이다.
+- 단점
+    - 요청 양에 비해 처리 속도가 늦어질 경우 새로운 요청들은 모두 버려진다.
