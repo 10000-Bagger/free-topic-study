@@ -30,7 +30,7 @@
 - FIFO Queue가 가득차지 않았다면 요청을 받아들인다.
 - FIFO Queue가 가득차 있다면 클라에게 에러를 반환한다.
 - 구현해보기
-    - (Leaky Bucket 알고리즘을 활용한 Rate Limiter)[https://github.com/egg528/rate-limiter-learning/pull/1]
+    - [Leaky Bucket 알고리즘을 활용한 Rate Limiter](https://github.com/egg528/rate-limiter-learning/pull/1)
 - 장점
     - 일정한 속도의 처리량을 유지할 수 있다
     - 구현이 정말 간단하다.
