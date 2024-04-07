@@ -17,9 +17,7 @@ been reviewed for security issues. DON'T USE IT FOR PRODUCTION USE!
 - Django로 만든 API 서버를 GCP에서 NGINX로 서빙하는 과정을 수행하면서 Gunicorn이라는 키워드를 얻게 되어 공부했습니다.
 
 ![스크린샷 2024-04-05 105302](https://github.com/10000-Bagger/free-topic-study/assets/34956359/13ee305d-e7e0-4206-a814-d8b99cebd457)
-*Django의 WSGI는 Spring Boot에 내장된 Tomcat과 다르게, 웹 서버가 안에 내장되어 있지 않음.*
-
-Django의 WSGI는 Spring Boot에 내장된 Tomcat과 다르게, 웹 서버가 안에 내장되어 있지 않음. 
+*Django의 WSGI는 Spring Boot에 내장된 Tomcat과 다르게, 웹 서버가 안에 내장되어 있지 않음.* 
 
 즉, Python 진영은 WSGI 기반의 WAS, Java 진영은 Servlet 기반의 WAS 운용.
 
