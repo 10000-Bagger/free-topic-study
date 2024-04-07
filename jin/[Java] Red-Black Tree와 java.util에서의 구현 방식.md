@@ -4,7 +4,7 @@
 - 회전과 recoloring
 - Java에서의
 
-# Red-Black Tree와 java.util에서의 구현 방식 1
+# Red-Black Tree와 java.util에서의 구현 방식
 
 ## 1. Red-Black Tree란
 ![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/b5492724-25b2-48ce-8854-c10f731f6e5c)
@@ -287,6 +287,161 @@ put의 3번째 파라미터 `replaceOld`는 대체 여부를 따지는데, Map�
 
 ![insert1](https://github.com/10000-Bagger/free-topic-study/assets/71186266/52ec5d28-6a43-4eeb-94aa-b5b69e35b791)
 
-앞서 설명한 삽입 이후 균형을 맞추는 과정이 while문 안에서 이루어지고 있다.
+앞서 설명한 삽입 이후 균형을 맞추는 과정이 while문 안에서 이루어지고 있다. (메서드의 역할은 이름 그대로 생각하면 된다.)  <br> <br>
 
-### 4.2 삭제
+이하 설명은 주석에 달아 두었다.
+
+- 메서드 시작 ~ While문 조건
+![fix1](https://github.com/depromeet/amazing3-be/assets/71186266/3b0bf49a-f358-404d-9794-bf28f3e5b943)
+
+
+- while문 안의 분기 `Case A` : 부모가 조부모의 왼쪽 자식일 때 <br> + `Case A-1` : 부모와 형제 노드가 모두 빨간 색일 때.
+![caseA1](https://github.com/depromeet/amazing3-be/assets/71186266/69463faf-dfa6-481d-9bd3-4e75e67a49c0)
+
+- `Case A-2` : 부모가 빨간색이며, 부모의 형제 노드는 검은 색일 때
+![caseA2](https://github.com/depromeet/amazing3-be/assets/71186266/9c4be355-f6bd-496b-98cd-edba550333c3)
+
+
+- `Case B` : 부모가 조부모의 오른쪽 자식일 때이다. Case A와 대동소이하다. 부모 형제 노드를 찾는 부분과 회전 방향이 반대된다.
+![caseB1](https://github.com/depromeet/amazing3-be/assets/71186266/f684e2b9-4ed0-411b-90e3-8289c64a33ab)
+![caseB2](https://github.com/depromeet/amazing3-be/assets/71186266/1ef1a83e-b704-405e-b755-48832ea19978)
+
+이렇게 코드로 살펴보니, 앞서 설명만 봤을 때보다 훨씬 이해하기 쉽지 않은가? 특히 TreeMap은 코드를 아주 읽기 좋게 구성해 놓았다. <br> 
+현재 노드가 x, 부모의 형제가 y인 것만 빼면 나머지는 전부 이름을 통해 이해할 수 있다. 
+
+<br>
+
+![image](https://github.com/depromeet/amazing3-be/assets/71186266/070814fa-0272-4734-9560-96a54200e094)
+
+마지막으로 루트를 검은 색으로 칠하는데, 재조정 과정에서 루트가 검은색이 되는 경우를 방지하기 위해서이다! <br>
+이렇게 하면 삽입과 재조정 과정이 끝나게 된다. 이제 삭제와 재조정 과정을 알아보자.
+
+## 5. 삭제와 재조정
+삭제는 아주 간단하다. 노드를 삭제한 다음, 자식 노드 중 하나로 그 노드를 대체한다. 대신 여기서도 빨간 노드 2개가 연속할 수 있고, 재조정 과정이 필요하다.
+
+
+![image](https://github.com/depromeet/amazing3-be/assets/71186266/1e5defa0-7c4c-4c72-9b65-2b94ffdfdf1e)
+
+위와 같이 getEntry라는 메서드를 통해 지울 노드를 특정하고 deleteEntry를 호출한다. 
+
+<br>
+
+
+![image](https://github.com/binary-ho/imhere-server/assets/71186266/2d667899-66bf-482e-b6d9-cc1e0b0694f8)
+
+DeleteEntry의 가장 윗 부분이다.
+연산 횟수를 세고, 사이즈를 줄인 다음 **왼쪽 오른쪽 자식이 있는 경우 현재 노드 `p`를 Successor를 호출해 설정한다.** 
+
+<br>
+
+`Successor`는 지워질 노드를 차지할 새로운 노드를 찾는다! 발견된 값은 **`지워질 노드를 루트로 하는 서브 트리 안에서 현재 노드보다 크면서 가장 작은 값`** 이다. 
+
+![image](https://github.com/depromeet/amazing3-fe/assets/71186266/872ef0c8-a4ce-4d3f-9292-c957d6780b24)
+
+위의 빨간 표시를 한 부분을 보자. 어차피 successor는 left와 right가 null이 아닐 때만 호출되므로, 무조건 빨간색으로 표시한 부분이 호출된다. <br>
+
+그리고 그림과 함께 코드를 이해해보자.
+
+![17delete](https://github.com/binary-ho/imhere-server/assets/71186266/84af2944-c38d-4a16-b3e6-2be905e45b84))
+
+예를 들어 17번 노드를 지운다고 생각해보자. (값 17을 가지고 있는 노드) 이 노드는 **오른쪽 자식, 왼쪽 자식 모두 가지고 있다** 따라서 succssosr가 호출된다. 다음으로 넘어가기 전에, 어떤 값이 17번 노드를 대체하면 좋을지 생각해보자. <br>
+
+1. 13의 오른쪽이니 13보다 커야 하고
+2. 15를 왼쪽 자식으로 가졌으니, 15보다 커야 한다
+3. 그리고 25를 오른쪽 자식으로 가졌으니, 25 보다 작아야 한다.
+
+<br>
+
+왼쪽에서 노드를 끌어올 것이 아니라면, `22번 노드`를 17번 노드가 지워진 자리에 두면 딱 좋을 것이다! `22`는 13보다 크고 && 15보다 크며 && 25보다 작기 때문이다.
+
+![17del2](https://github.com/binary-ho/imhere-server/assets/71186266/70c3cb37-da5a-4c3f-b795-286b88f8f353)
+
+<br>
+
+그래서 코드가 아래와 같은 것이다. **오른쪽 자식을 현재 노드로 둔 다음, 왼쪽 자식을 계속 타고 이동한다. 그러면 지울 노드가 루트인 하위 트리에서 지울 노드보다는 숫자가 크면서 가장 숫자가 작은 "22"를 발견할 수 있다.** <br>
+
+8을 지우는 경우에도 똑같이 11을 발견한다.
+![image](https://github.com/binary-ho/imhere-server/assets/71186266/dc989931-38f2-49d4-9f97-12b87105ca93)
+
+루트를 지운다면? 15를 발견할 것이다. <br> <br>
+
+
+호출한 이후엔 어떻게 될까?
+
+![image](https://github.com/binary-ho/imhere-server/assets/71186266/2d667899-66bf-482e-b6d9-cc1e0b0694f8)
+
+p에 key와 value를 대체한다 위에서 예시로 든 17을 지우는 경우 아래와 같이 22라고 "표시"하는 것이다. 그리고 현재 노드는 아래에 있는 22 노드가 된다.
+
+![image](https://github.com/depromeet/amazing3-fe/assets/71186266/9fa405b4-b2e0-4e8b-9a87-01681ea72451)
+
+<br>
+
+**이제 문제는 아래의 22번 노드를 지우는 문제로 바뀌게 된 것이다!**
+
+
+### fixAfterDelete
+
+대체 노드를 찾은 이후엔 코드가 위와 같이 진행된다. 이 코드를 설명하기 전에, 중간 중간에 있는 현재 노드가 Black인 경우 균형을 맞추는 `fixAfterDelete`를 먼저 설명하겠다. <Br> 
+
+일단, 왜 검은색에서 균형을 잡아야 할까? <Br>
+Red-Black Tree는 빨간색이 두번 연속 올 때 균형을 맞춰야 한다고 했다. 만약 지워지는 노드가 빨간색이었다면, 균형이 깨질 일이 있을까? 없다. <Br>
+균형이 깨지는 순간은 오직 빨간 노드가 검은 노드를 대체할 때 뿐이다. 따라서, 균형을 잡는다면 무조건 검은 노드가 지워질 때이다.
+
+
+![image](https://github.com/depromeet/amazing3-fe/assets/71186266/7e45815c-70b4-4261-97dd-9a68f88932a7)
+
+
+따라서, 현재 노드 `x`가 검은색이며, 루트가 아닐 때 while문이 반복된다. 앞서, fixAfterInsertion에서 그랬던 것처럼 if문을 통해 x가 부모의 왼쪽 자식인지 오른쪽 자식인지를 통해 가장 큰 분기를 나눈다. <br> <br>
+그리고 `sib`이라는 노드에 현재 노드의 형제 노드를 담는다.
+
+
+1. `현재 노드`가 `부모`의 왼쪽 자식인 경우 - `sib`은 부모의 오른쪽 자식
+   - `공통 연산` : `형제`가 **빨간색인** 경우 (나는 검정, 형제는 빨강)
+     1. 형제를 검은 색으로 칠한다.
+     2. 부모를 빨간 색으로 칧나다.
+     3. "Left Rotate"를 수행한다.
+     4. 새로운 sib을 갱신한다.
+   - `Case 1` : 형제의 두 자식이 모두 검은색인 경우
+     1. 형제를 빨간 색으로 색칠한다.
+     2. 현재 노드를 부모 노드로 변경.
+   - `Case 2` : 형제의 두 자식 중 하나라도 빨간 색이 있는 경우
+     - `공통 연산` : 만약 오른쪽 자식이 검은 색이고, 왼쪽 자식이 빨간 색이라면
+       1. 빨간색인 왼쪽 자식을 검은 색으로 바꾼다. 
+       2. 형제를 빨간 색으로 바꾼다.
+       3. "Right Rotate"를 수행한다.
+       4. 이후, 형제 노드를 갱신한다.
+     1. 형제 노드를 부모 노드와 같은 색으로 색칠한다.
+     2. 이후 부모를 검은 색으로 칠한다.
+     3. 형제의 오른쪽 자식을 검은 색으로 칠한다.
+     4. "Left Rotate"를 실시한다.
+     5. 현재 노드를 루트로 둔다. (break에 해당)
+2. 만약 `현재 노드`가 `부모`의 오른쪽 자식인 경우 - `sib`은 부모의 왼쪽 자식이며, 위 과정을 모두 반대로 수행하면 된다.
+
+
+TODO : 더 자세히 설명 + setRoot Black
+
+### 대체 노드를 찾은 이후
+
+
+![image](https://github.com/depromeet/amazing3-fe/assets/71186266/fad37635-c96b-4a07-9c42-ea9c6acf3be6)
+
+(if, else if, else를 각각 A, B, C번 분기라고 부르겠다.) <br>
+
+이제부터 위의 대체 노드를 찾은 이후 연산을 살펴보자. 케이스는 3가지 케이스가 있을 수 있다.
+
+- `Case 1` : 왼쪽 자식, 오른쪽 자식이 모두 존재하여, succssor를 호출한 경우
+- `Case 2` : 오른쪽 자식이 비어 있던 경우
+- `Case 3` : 왼쪽 자식이 비어 있던 경우
+
+#### 삭제 Case 1
+트리에 노드가 단 하나인 경우가 아니라면, succssor는 리프 노드일 수 밖에 없다.
+- 삭제할 노드가 루트였던 경우 B번 분기
+- 트리에 노드가 1개가 아니었던 경우, C번 분기
+
+B번 분기의 경우 간단하게 루트를 null 표시하며 끝난다. <br>
+
+C번 분기의 경우 만약 현재 노드가 검은색이라면, fixAfterDeletion을 호출한다. <br>
+
+균형을 맞춘이후 부모가 null이 아니라면 노드를 참조하는 래퍼런스를 모두 떼어낸다.
+1. 부모에서 자식 참조 제거
+2. 현재 노드에서 부모 참조 제거...
