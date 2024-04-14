@@ -147,3 +147,27 @@ __r(0); // index.js
   2. 모듈 정의
   3. 초기화 코드 실행
   4. 어플리케이션 코드 실행
+
+---
+
+## 사전 컴파일
+- Hermes 엔진을 사용하고 + 릴리즈 빌드를 진행하면 번들링 후에 사전 컴파일 과정을 추가로 진행한다
+   - 개발 모드에서는 진행 x 
+- Meta에서 Heremes 엔진에 대해 JIT 컴파일 과정 없이 최적화를 수행하여 성능 향상을 이루어냈다고 함
+
+### Hermes의 최적화 과정
+
+- 기존에는 빌드 타임 이후 생성된 결과물인 번들을 런타임에 파싱하고 컴파일하여 실행하는 과정을 거침
+- 저사양의 기기에서는 이러한 괒어이 초기 실행 속도를 늦추게 되는 원인이 됨
+
+
+![image](https://github.com/10000-Bagger/free-topic-study/assets/80238096/00fc0778-6847-4bdb-825e-b4feb80bc7ea)
+
+- Hermes 엔진은 이러한 문제를 극복하기 위해 생성된 번들을 빌드타임에 미리 컴파일하여 즉시 실행 가능한 바이트 코드 형태로 변환함
+- 덕분에 앱 실행 시 파싱과 컴파일 과정이 불필요하게 되어 초기 실행 속도에 좋은 성능을 보일 수 있음
+
+<img width="709" alt="image" src="https://github.com/10000-Bagger/free-topic-study/assets/80238096/1faaa436-ec2b-48b0-95d5-029e7624efdb">
+
+빌드 타임에 컴파일 과정을 수행하는 코드
+- [Android Gradle Plugin](https://github.com/facebook/react-native/blob/v0.72.0/packages/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/tasks/BundleHermesCTask.kt#L92-L113)
+- [IOS Shell Script](https://github.com/facebook/react-native/blob/v0.72.0/packages/react-native/scripts/react-native-xcode.sh#L170-L186)
