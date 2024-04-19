@@ -6,8 +6,8 @@ name: Python application
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   build:
@@ -28,11 +28,14 @@ jobs:
     - name: Run Update Python Script
       run: |
         python utils/count_files.py
-    - name: Run Update README.md File
+    - name: Checkout to bot/count-files branch
+      run: |
+        git fetch
+        git checkout bot/count-files || git checkout -b bot/count-files
+    - name: Run Update README.md File and Push
       run: |
         git config --local user.email "dfghcvb11@naver.com"
         git config --local user.name "binary-ho"
         git add .
-        git diff
         git commit -m "Automatically Update README.md file"
-        git push
+        git push origin bot/count-files
