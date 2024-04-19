@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Auto approve and merge if from bot/count-files branch
-      if: github.event.pull_request.head.ref == 'bot/count-files' && github.actor == 'github-actions[bot]'
+      if: github.event.pull_request.head.ref == 'bot/count-files'
       run: |
         echo "Approving and merging PR from bot/count-files branch"
         curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
