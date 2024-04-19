@@ -1,0 +1,80 @@
+from collections import Counter
+from datetime import datetime
+import os
+
+
+# def count_files():
+#     files_info = []
+#     total_file_count = 0
+#     directory_list = [directory for directory in os.listdir("./") if "Folder" in directory]
+#     for directory in directory_list:
+#         file_list = os.listdir(f"./{directory}")
+#         file_count = len(file_list)
+#         temp = [directory, file_count]
+#         files_info.append(temp)
+#         total_file_count += file_count
+#     return files_info, total_file_count
+
+# def count_files():
+#     files_info = []
+#     total_file_count = 0
+#     # "jin", "hong", "joon", "new", "woo" 중 하나라도 포함된 폴더 이름을 찾습니다.
+#     directory_list = [directory for directory in os.listdir("./") if any(name in directory for name in ["jin", "hong", "joon", "new", "woo"])]
+#     for directory in directory_list:
+#         file_list = os.listdir(f"./{directory}")
+#         file_count = len(file_list)
+#         temp = [directory, file_count]
+#         files_info.append(temp)
+#         total_file_count += file_count
+#     return files_info, total_file_count
+
+def count_files_recursive(directory):
+    total_file_count = 0
+    # 현재 디렉토리의 내용을 나열합니다.
+    for entry in os.scandir(directory):
+        if entry.is_file():
+            # 파일이면 카운트를 증가합니다.
+            total_file_count += 1
+        elif entry.is_dir():
+            # 디렉토리(폴더)면 재귀적으로 이 함수를 호출합니다.
+            total_file_count += count_files_recursive(entry.path)
+    return total_file_count
+
+def count_files():
+    files_info = []
+    directory_list = [directory for directory in os.listdir("./") if os.path.isdir(directory) and directory not in [".github", "utils"]]
+    for directory in directory_list:
+        file_count = count_files_recursive(f"./{directory}")
+        temp = [directory, file_count]
+        files_info.append(temp)
+    return files_info, sum(info[1] for info in files_info)
+  
+  
+def make_info(files_info, total_file_count):
+    info = f"## Files Count In Folders\nTotal File Count: {total_file_count}\n"
+    for directory_files_info in files_info:
+        temp = f"- {directory_files_info[0]}: {directory_files_info[1]}\n"
+        info += temp
+    return info
+    
+
+
+def make_read_me(info):
+    return f"""# Self-Updating-Readme
+Push할 때마다 폴더 별 파일 수를 리드미에 자동으로 업데이트<br>
+Automatically update the number of files per folder to Readme whenever you push.<br><br>
+{info}
+"""
+
+
+def update_readme():
+    files_info, total_file_count = count_files()
+    info = make_info(files_info, total_file_count)
+    readme = make_read_me(info)
+    return readme
+
+
+if __name__ == "__main__":
+    readme = update_readme()
+    with open("./README.md", 'w', encoding='utf-8') as f:
+        f.write(readme)
