@@ -32,8 +32,8 @@ def count_files_recursive(directory):
     total_file_count = 0
     # 현재 디렉토리의 내용을 나열합니다.
     for entry in os.scandir(directory):
-        if entry.is_file():
-            # 파일이면 카운트를 증가합니다.
+        if entry.is_file() and entry.name.endswith('.md'):
+            # .md 확장자를 가진 파일이면 카운트를 증가합니다.
             total_file_count += 1
         elif entry.is_dir():
             # 디렉토리(폴더)면 재귀적으로 이 함수를 호출합니다.
