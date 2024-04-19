@@ -11,11 +11,13 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # 모든 이력을 가져오도록 설정
+        persist-credentials: true  # 자격증명을 지속
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -23,14 +25,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-    - name: Run Update Python Script 
+    - name: Run Update Python Script
       run: |
         python utils/count_files.py
     - name: Run Update README.md File
       run: |
-        git add .
-        git diff
         git config --local user.email "dfghcvb11@naver.com"
         git config --local user.name "binary-ho"
+        git add .
+        git diff
         git commit -m "Automatically Update README.md file"
         git push
