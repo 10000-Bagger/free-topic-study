@@ -1,5 +1,5 @@
 
-# 자바 버전별 주요 변화 총정리
+# 자바 버전별 주요 변화 총정리와 Spring Boot 3 (~17)
 
 대단원은 LTS로 구분되고, 소단원이 그 전 LTS 버전의 다음 버전 부터 ~ 대단원이 다루는 LTS 버전까지의 내용이다. <br>
 말을 너무 못 했는데, **예를 들어 2단원이 LTS인 Java 11을 다루는데, 그 전 LTS가 8이었다. 그래서 2단원은 `Java 9 ~ Java 11`을 다룬다.**
@@ -110,7 +110,9 @@ Java 8 이후 부터 11까지의 변화를 확인해보자.
 
 ## 2.1 Java 9
 ### 2.1.1 `Module`
-`Module` : 매우 큰 주제. 패키지의 묶음이다. 결국 classpath의 한계점 때문에 등장했다.
+`Module` : 매우 큰 주제. 패키지의 묶음이다. Jigsaw Project에서 만들었고, 결국 classpath의 한계점 때문에 등장했다. 
+
+### 2.1.1.1 classPath의 한계점
 1. `그룹화에 한계가 있었다` : Java는 접근 제한자를 통해 클래스 단위의 캡슐화가 가능했는데, 패키지 단위로는 캡슐화가 불가능했다. <br> **그리고 한 패키지의 클래스를 다른 패키지가 의존하려면 억지로 클래스를 public으로 만들어야만 했다!** <br> **기본적으로 모든 클래스와 리소스가 전역적으로 접근 가능해지는 문제가 발생했다.** <br> 
 2. `명시적인 의존성 선언을 강제하지 않음` : 제한 없는 접근성은 떄문에 충돌 문제를 발생시켰다. 버전에 대한 문제도 많았는데, 패키지가 포함된 클래스의 경로는 같은 패키지 클래스의 다른 버전을 구분할 수 있는 장치가 따로 없다. <br> 따라서 여러 컴포넌트가 같은 라이브러리의 다른 버전을 사용하는 경우 문제가 발생할 수 있다. 이는 클래스들을 컴파일 한 후에 하나의 jar 파일에 전부 넣기 때문에 발생한다. <br>
 
@@ -118,6 +120,7 @@ Java 8 이후 부터 11까지의 변화를 확인해보자.
 
 이런 문제들을 module로 해결할 수 있다! <br> <br>
 
+### 2.1.1.2 Module의 도입
 module은 java 8에 도입된 기능으로 module이라는 키워드로 정의할 수 있다. <br>
 module-info.java 파일을 작성해 모듈을 이용함으로써, 앞서 언급한 classpath의 문제를 해결할 수 있다.
 
@@ -160,8 +163,15 @@ java --module-path mods --module moduleB/com.example.ModuleB
   - `compare()` : 두 배열을 비교한다. 어떤 배열이 논리적으로 앞서 있는지 확인한다(?)
   - `mismatch()` : 두 배열의 다른 "첫" 인덱스를 찾아낸다. 만약 두 Array에 원소가 다른 부분이 있다면 첫 위치를 찾아 반환하는 것인데, 내용물이 전부 같은 경우 `-1`을 반환한다. 
 
+### 2.1.4 Java 9 Flow
+- [[Java] Concurrency 3 - Java 9 Flow](https://github.com/10000-Bagger/free-topic-study/blob/main/jin/%5BJava%5D%20Concurrency%203%20-%20Java%209%20Flow%201.md)
+- TODO : 보충 필요 - Non-Blocking, Backpressure
 
-### 2.1.4 그 외 Compact String, Optional, Try-with-resource
+### 2.1.5 G1 GC의 Default GC 지정!
+G1GC가 Default GC로 선정 되었다.
+- TODO : G1GC 글 쓴 다음 채우기 
+
+### 2.1.6 그 외 Compact String, Optional, Try-with-resource
 - Comapct String : Java는 UFT 16을 사용하기 때문에, 모든 문자가 2 byte로 구성 된다. String 또한 문자들을 내부적으로 2 byte의 char로 저장하고 있었다. 따라서 1 byte로 표현할 수 있는 영어도 String에 저장해야 했고, 공간의 낭비가 있었다. <br> 자바 9 부터는 Compact String이 추가되어 byte로 저장한다. 따라서 1 byte로 영어를 저장할 수 있다.
 - Try-With-Resource 개선 : Try문 밖에서 선언한 변수를 try문 괄호에 사용할 수 있게 되었다. (Try의 Resource로 사용할 수 있게 되었다.)
 - Optional API 추가
@@ -175,8 +185,62 @@ java --module-path mods --module moduleB/com.example.ModuleB
   - `ifPresentOfElse()` : 비어 있을 경우 무엇을 할지 지정할 수 있다.
   - `stream()` : Optional을 Stream 객체로 변환할 수 있다.
 
-## 2.2 Java 10
-- 로컬 변수 타입 추론 `var`
+## 2.2 Java 10 (TODO : 보충)
+- `Thread-Local Handshakes`
+### 2.2.1 로컬 변수 타입 추론 `var`
+Java 10에서 지역변수 유형 추론을 위해 도입되었다. <br>
+var는 js나 C#의 var처럼, 변수를 선언할 때 타입을 var라고 적기만 하면 알아서 타입을 추론해서 초기화 해준다. 엄격한 타입이 강점인 자바에서 당연히! var의 도입은 많은 반발이 있었지만, 편리한 경우도 꽤 있다. <br>
+
+편리해질 수 있는 예시를 보자. **타입의 추론은 매우 명확한데에 비해 그 타입의 이름이 너무 긴 경우에 좋다.** <Br>
+
+아래와 같은 케이스는, `Map.Entry` 부분이 너무 길다.
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/5b33c3c6-47ac-42ed-8604-71bda63cb1b4)
+
+<br> <br>
+
+var를 사용한다면, 아래와 같이 고칠 수 있다.
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/47dea2e8-5d4c-4ccf-b64f-7431a2a74b62)
+
+
+확실히 깔끔해졌다. <Br>
+또한, Non-Denotable한 요소에 사용하는 경우 용이하다. <br>
+
+어떤 경우인고 하면, **예를 들어 익명 클래스는 타입을 마땅히 표현하기가 어렵다.** 
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/bce2695c-46be-4f47-9cbb-e294dcf96ad5)
+
+위와 같이 인텔리제이의 도움을 받아 익명 클래스를 변수로 받아 맴버를 호출해 보았다.
+
+Object에는 저런 맴버가 없기 때문에 빨간 줄이 그어지며 컴파일에 실패했다.
+
+하지만 var를 사욯하면 아래와 같이 고칠 수 있다.
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/e945de6d-62c6-48fd-b5bd-b092d94befe1)
+
+### 2.2.2 var 사용시 주의할 점
+
+#### var를 사용할 수 없는 경우가 있다.
+1. 매개변수로 사용할 수 없다.
+2. 변수를 선언만 하는 경우 사용할 수 없다.
+3. 람다와 함께 사용할 수 없다.
+
+<br>
+
+이 3가지 경우는 모두 타입을 추측할 거리가 없다.
+
+#### 또한 var에 대한 가독성 
+var에 대한 가독성은 고민해 보아야 한다. <br>
+var는 코드 가독성을 박살낸다.
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/0ea2d00f-5515-4755-9fc2-f1a1d7c9645c)
+
+
+첫 번째 줄은 직관적으로 `getChicken()`이 무엇을 반환하는지 알 수 있다. 하지만, 두 번째 줄은 대체 무엇을 반환하는지 확인하기 어렵다. (물론 사진에서는 인텔리제이가 알려주고 있다.)
+
+
+
+### 2.2.3 그 외 추가된 점들
 - Optional API 추가
   - `orElseThrow()` : 객체가 비어있는 경우 `NoSushElementException`를 던진다. 물론 지정할 수도 있다.
 
@@ -198,6 +262,8 @@ java --module-path mods --module moduleB/com.example.ModuleB
     - `writeString()`
     - `readString()`
   - `toArray()` : List를 Array로 바꿀 때 사용한다. 예전에는 사이즈를 직접 입력해야 했어서 사용이 쉬운 편은 아니였는데, java `` 부터는 `intFuntion`을 받아 편리해졌다. 
+- ZGC
+
 
 # 3. Java 17 (LTS)
 이제 11 부터 17까지의 변화를 살펴보자.
@@ -215,6 +281,7 @@ java --module-path mods --module moduleB/com.example.ModuleB
   ![image](https://github.com/depromeet/amazing3-be/assets/71186266/45a88dd8-cab7-40eb-b9a1-3b0ac44f4247)
 
 ## 3.3 Java 15
+- ZGC 정식 GC 인정
 - String
   - Text Block
     - 여러 줄의 String을 편하게 선언하고 사용할 수 있다. 편한 기능이다.
@@ -277,7 +344,7 @@ java --module-path mods --module moduleB/com.example.ModuleB
 
 1. 기본 생성자 없음
 2. **값 변경 메서드 없음**
-3. final 클래스로 선언됨. (추상 클래스가 아님)
+3. **final 클래스로 선언됨. (+ 당연히 추상 클래스가 아님)**
 4. 다른 클래스를 상속할 수 없다.
 
 
@@ -349,7 +416,65 @@ noBrain만 생성시 예외가 발생하는 것을 확인할 수 있다.
 
 
 ## 3.5 Java 17
-생각보다 길어져서 17 부터는 나중에 채워보려 한다...
+### 3.5.1 Sealed 키워드 (JDK 15 추가)
+Sealed Class/Interface는 "밀봉된"이라는 의미로, 오직 허가된 Class와 Interface만 해당 클래스를 상속하거나, 구현할 수 있다. <br>
+이를 통해 개발자는 하위 클래스나 구현체를 쉽게 제어하고, 알아낼 수 있다. <Br>
+
+또한 superclass 사용을 제한하기 위해 access modifier 보다 좀 더 선언적인 방법을 제공해준다. 에를 들어 private, protected 보다 조금 더 분명하게 이해할 수 있다. <Br>
+(abstract class도 가능하다.)
+
+#### 사용하는 방법
+상속을 제한하고 싶은 상위 클래스에 `sealed` 키워드를 사용한다. 이후, `permits` 키워드 뒤에 이 클래스를 상속하거나 구현할 수 있는 하위 클래스들을 선언한다! <br> <br>
+
+`permits`의 대상이 된 클래스들은 아래 규칙을 지켜야 한다.
+1. **final, sealed, non-sealed 중 하나를 선택해서 구현해야 한다!** <br> sealed인 경우 당연히 permits를 지정해야 한다. <br> 그리고 **permits 대상이 구현체인 경우 record type도 가능하다.** 아마 record는 final로 선언되기 때문인 것 같다.
+2. sealed type과 같은 패키지에 있거나, 같은 모듈에 위치해야 한다. (java 9의 named module)
+
+<br> <br>
+
+**참고로 같은 클래스 파일 안에 있는 클래스는 `permits`으로 지정하지 않아도 아니여도 상속 받을 수 있다.**
+
+
+위와 같이 검사 이후 하위 클래스 
+
+### Sealed Class의 장단점
+#### 장점
+1. 높은 안정성 : 명시적이기 때문에 상속 구조에서의 불안정성이 줄어든다.
+2. 새로운 유형의 추상화 : 더욱 유연한 추상화 가능
+3. 가독성 향상 : 하위 클래스 목록을 명시하기 때문에, 파악이 빠르다.
+4. 실수 방지
+#### 단점
+1. 계층 구조의 복잡성이 증가한다.
+2. 유지 보수시 손이 더 많이간다 : 하위 클래스 목록을 바꿀 때마다 코드를 수정해야 한다.
+3. 유연성 감소 : 실드 클래스를 사용하면 하위 클래스를 제한할 수 있는 대신 유연성이 감소한다.
+
+### 3.5.2 Pattern Matching for switch (preview)
+21에 정식으로 도입된다. 패턴 매칭과 Sealed Class <br>
+앞서 소개한 `instanceof`의 패턴 매칭과 똑같이 사용 가능하다.
+
+```java
+static double getDoubleUsingSwitch(Object object) {
+    return switch (object) {
+        case Integer integer -> integer.doubleValue();
+        case Float floatValue -> floatValue.doubleValue();
+        case String string -> Double.parseDouble(string);
+        default -> 0d;
+    };
+}
+```
+
+위와 같이 case문에서 Type 검사 이후, 형변환된 채로 바로 사용할 수 있어 편리하다!
+
+## 3.6 Preparing for Spring Boot 3.0
+**Java 17이 중요한 또 하나의 이유는 Spring Boot 버전을 3.0으로 올리기 위해선 필수 적으로 Java 17이 준비 되어야 하기 때문이다!** <br>
+언어나 기술을 항상 최신 버전으로 유지하는 것은 아직 발견 못한 버그를 받아버릴 수도 있다는 위험성이 있지만, Java나 JS처럼 핵심 언어들은 주요 버전 기준으로 혹은 LTS를 기준으로 최신 버전을 유지하는 것이 나쁘지 않다. <br>
+
+왜냐하면 관련 생태계 라이브러리나 프레임 워크의 최신 버전 중 기본 언어의 최소 버전을 요구하는 경우가 있기 때문이다. <br> <br>
+
+물론 그 외에도 "새로운 기능 사용 가능", "이전 버전에서의 bug fix" 등의 장점은 기본적으로 따라온다. <Br> 
+하여튼, Java 17까지의 변화를 알아봤으니, 이번엔 Spring Boot 3로 마이그레이션 하는 법을 살펴보자. <br>
+너무 잘 쓰여진 글이 있어서 첨부한다. 래퍼런스를 너무 잘 달아 놓아서, 내가 적는게 무의미 할 것 같아 링크를 단다...
+- [Preparing for Spring Boot 3.0](https://spring.io/blog/2022/05/24/preparing-for-spring-boot-3-0)
 
 
 ## Reference
@@ -357,3 +482,5 @@ noBrain만 생성시 예외가 발생하는 것을 확인할 수 있다.
 - 그동안 내가 작성해온 블로그와 TIL의 여러 글들에서...
 - [호호의 Java 11](https://www.youtube.com/watch?v=LcIyHlE2NlA)
 - [Java Records : A Deep Dive - Muhammad Ali](https://medium.com/@ikhaleepha/java-records-a-deep-dive-e06fec984462)
+- [우리 팀이 Java 17을 도입한 이유](https://techblog.gccompany.co.kr/%EC%9A%B0%EB%A6%AC%ED%8C%80%EC%9D%B4-jdk-17%EC%9D%84-%EB%8F%84%EC%9E%85%ED%95%9C-%EC%9D%B4%EC%9C%A0-ced2b754cd7)
+- [Java Sealed class 와 Switch - ysk(0soo)](https://0soo.tistory.com/222?category=580548#Sealed%--%ED%--%B-%EB%-E%--%EC%-A%A-%EC%-D%--%--%EC%-E%A-%EB%-B%A-%EC%A-%--)
