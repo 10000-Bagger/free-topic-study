@@ -1,5 +1,5 @@
 
-# 자바 버전별 주요 변화 총정리와 Spring Boot 3 (~17)
+# 자바 버전별 주요 변화 총정리 (~17)
 
 대단원은 LTS로 구분되고, 소단원이 그 전 LTS 버전의 다음 버전 부터 ~ 대단원이 다루는 LTS 버전까지의 내용이다. <br>
 말을 너무 못 했는데, **예를 들어 2단원이 LTS인 Java 11을 다루는데, 그 전 LTS가 8이었다. 그래서 2단원은 `Java 9 ~ Java 11`을 다룬다.**
@@ -27,6 +27,16 @@ try문이 전부 끝나면, 객체의 `close()`를 자동으로 호출해준다.
 <br>
 
 이펙티브 자바 아이템 9에서도 try-finally 보다는 try-with-resources를 사용하라고 권한다. 궁금한 사람은 정리 내용 읽어보자. [Item 9. try-finally 보다는 try-with-resources를 사용하라](https://github.com/binary-ho/TIL-public/blob/main/Effective%20Java/Item%209.%20try-finally%20%EB%B3%B4%EB%8B%A4%EB%8A%94%20try-with-resources%EB%A5%BC%20%EC%82%AC%EC%9A%A9%ED%95%98%EB%9D%BC.md)
+
+### 1.1.2 ArrayList Resize 방식 변경
+Java 7 이전에는 배열이 가득 찬 경우 `(oldCapacity * 3) / 2 + 1`의 수식으로 Resize를 진행했다. <Br>
+하지만 이 방식은 3을 곱하는 과정에서 Overflow가 발생할 수도 있기 때문에, Java 7에서 계산식을 바꾸었다. 
+
+```java
+int newCapacity = oldCapacity + (oldCapacity >> 1);
+```
+
+이 계산식을 통해 1.5배인 것은 비슷하게 유지하되, Overflow 가능성을 줄였다.
 
 ## 1.2 Java 8! (LTS)
 ### 1.2.1 람다와 스트림!
@@ -168,7 +178,7 @@ java --module-path mods --module moduleB/com.example.ModuleB
 - TODO : 보충 필요 - Non-Blocking, Backpressure
 
 ### 2.1.5 G1 GC의 Default GC 지정!
-G1GC가 Default GC로 선정 되었다.
+Java 9에서 G1GC가 Default GC로 선정 되었다.
 - TODO : G1GC 글 쓴 다음 채우기 
 
 ### 2.1.6 그 외 Compact String, Optional, Try-with-resource
@@ -262,7 +272,6 @@ var는 코드 가독성을 박살낸다.
     - `writeString()`
     - `readString()`
   - `toArray()` : List를 Array로 바꿀 때 사용한다. 예전에는 사이즈를 직접 입력해야 했어서 사용이 쉬운 편은 아니였는데, java `` 부터는 `intFuntion`을 받아 편리해졌다. 
-- ZGC
 
 
 # 3. Java 17 (LTS)
@@ -281,7 +290,7 @@ var는 코드 가독성을 박살낸다.
   ![image](https://github.com/depromeet/amazing3-be/assets/71186266/45a88dd8-cab7-40eb-b9a1-3b0ac44f4247)
 
 ## 3.3 Java 15
-- ZGC 정식 GC 인정
+- ZGC 정식 GC 인정 Java 15 [ZGC](https://d2.naver.com/helloworld/0128759)
 - String
   - Text Block
     - 여러 줄의 String을 편하게 선언하고 사용할 수 있다. 편한 기능이다.
