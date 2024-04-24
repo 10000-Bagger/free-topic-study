@@ -41,7 +41,7 @@ int newCapacity = oldCapacity + (oldCapacity >> 1);
 ## 1.2 Java 8! (LTS)
 ### 1.2.1 람다와 스트림!
 여기에도 간단하게라도 적고 싶었지만, 너무 간단하게 쓰기도 싫고, 너무 길게 쓰기도 싫다. (충분히 글이 길어지고 있다.) <br>
-대신 제가 열심히 쓴 글을 첨부할테니, 읽어주세요 <br>
+대신 예전에 쓴 글을 첨부하려 한다.  <br>
 
 [Lambda & Stream의 도입 배경과 원리, 최적화 전략까지 알아보자.](https://dwaejinho.tistory.com/entry/Java-Lambda-Stream-%EB%8F%84%EC%9E%85-%EB%B0%B0%EA%B2%BD%EA%B3%BC-%EC%9B%90%EB%A6%AC-%ED%8C%8C%ED%95%B4%EC%B9%98%EA%B8%B0)
 
@@ -177,10 +177,32 @@ java --module-path mods --module moduleB/com.example.ModuleB
 - [[Java] Concurrency 3 - Java 9 Flow](https://github.com/10000-Bagger/free-topic-study/blob/main/jin/%5BJava%5D%20Concurrency%203%20-%20Java%209%20Flow%201.md)
 - TODO : 보충 필요 - Non-Blocking, Backpressure
 
-### 2.1.5 G1 GC의 Default GC 지정!
-Java 9에서 G1GC가 Default GC로 선정 되었다.
-- TODO : G1GC 글 쓴 다음 채우기 
+### 2.1.5 대망의 G1GC의 Default GC 지정!
+Java 9에서 G1GC가 Default GC로 선정 되었다! G1GC에 대해 간단하게 알아보자. <br>
+GC는 Live 객체를 식별하고 사용하는 곳이 없는 객체를 지우는 과정에서 발생하는 Stop-The-World 시간을 줄이는 방향으로 진화해왔다. 물론 처리량이나 효율과 같은 요소도 중요하지만, STW를 줄이는 것이 중요했다. G1GC 이전에 기본 GC로 쓰인 Parallel GC가 가진 Mark And Sweep시 발생하는 긴 STW 문제를 해결한 CMS GC 또한, Compaction이 없어 나중에 긴 Full GC를 갖는다는 문제점을 안고 있었다. <br> <br>
 
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/663122f2-f7e5-4a7d-b2b4-aabfe0a45727)
+
+이런 문제를 해결하기 위해 등장한 것이 Garbage First GC인 G1GC이다. 쓰레기가 가득 찬 영역 부터 치우겠다는 뜻으로 위 그림과 같이 Heap을 바둑판 모양의 "region"으로 나누어 칸마다 영역을 할당한다. <br>
+
+**G1GC는 CMS GC처럼 여러 수행 과정을 병렬적으로 처리하고, STW가 매우 짧으며, Heap 영역을 나눈 특성상 GC 과정에서 "조각 모음"과 같은 Compaction 과정이 일어난다.** <Br> <br>
+
+우리가 기존에 알던, Eden 영역, Survior, Old 영역은 이제 논리적으로 구분된다. **기존 GC는 영역을 물리적으로 나누었다면, G1GC는 영역을 논리적으로 나눈다.** <br> <br>
+
+빈 영역에 새로운 객체를 할당하며 Eden영역으로 만들고, Minor GC때 이 Eden 영역의 Live 객체를 **또다른 빈 공간에 할당하며** Survivor 영역이나 Old 영역으로 만든다. 이후 기존 공간은 깨끗하게 비운다. <br>
+
+이렇게 빈 공간을 옮겨다니며, 논리적으로 영역을 할당한다. `remember set`에 사용중인 공간을 비교한 다음 꽉 찬 영역을 청소한다. <br> <br>
+
+이러한 region 하나의 크기는 기본 heap 사이즈의 `1/2048`이다. (2^-11) `-XX:G1HeapRegionSize`값으로 조절할 수 있다. 이러한 region이 너무 작으면 많은 GC가 발생할 것이다. 애초에 G1GC는 어느 정도 큰 메모리에서 사용할 것을 상정하고 있다. 또한 region 크기는 Humongous 객체가 할당되기 위한 기준이 된다. <br> <br>
+그림을 보면 region 2개를 차지한 영역이 있는데, 이 영역에 Humongous Object가 저장된다. <Br>
+ 
+**하나의 region의 `1/2` 절반 보다 거대한 객체의 경우 Humongous 영역에 할당된다.** 이들은 연속된 메모리에 할당되며, 크기가 애매하게 남은 경우 그냥 "잉여 공간"으로 남기고 사용하지 않기 때문에 이런 영역이 많으면 Full GC를 유발할 수 있다. <br> <br>
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/6c94d6f1-90cc-4cc2-98fc-eb2f003af8e9)
+
+마킹은 SATB를 사용하고, Cycle Phase는 Young, Old GC가 발생하는 `Young Only Phase`와, Mixed GC가 발생하는 `Space Reclamaton Phase`로 나뉜다. 이 글에서는 G1GC를 간단하게만 다루는 것이 목적이므로, 래퍼런스를 참고하라 [Getting Started with the G1 Garbage Collector](https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html)
+
+ 
 ### 2.1.6 그 외 Compact String, Optional, Try-with-resource
 - Comapct String : Java는 UFT 16을 사용하기 때문에, 모든 문자가 2 byte로 구성 된다. String 또한 문자들을 내부적으로 2 byte의 char로 저장하고 있었다. 따라서 1 byte로 표현할 수 있는 영어도 String에 저장해야 했고, 공간의 낭비가 있었다. <br> 자바 9 부터는 Compact String이 추가되어 byte로 저장한다. 따라서 1 byte로 영어를 저장할 수 있다.
 - Try-With-Resource 개선 : Try문 밖에서 선언한 변수를 try문 괄호에 사용할 수 있게 되었다. (Try의 Resource로 사용할 수 있게 되었다.)
@@ -195,8 +217,8 @@ Java 9에서 G1GC가 Default GC로 선정 되었다.
   - `ifPresentOfElse()` : 비어 있을 경우 무엇을 할지 지정할 수 있다.
   - `stream()` : Optional을 Stream 객체로 변환할 수 있다.
 
-## 2.2 Java 10 (TODO : 보충)
-- `Thread-Local Handshakes`
+## 2.2 Java 10
+
 ### 2.2.1 로컬 변수 타입 추론 `var`
 Java 10에서 지역변수 유형 추론을 위해 도입되었다. <br>
 var는 js나 C#의 var처럼, 변수를 선언할 때 타입을 var라고 적기만 하면 알아서 타입을 추론해서 초기화 해준다. 엄격한 타입이 강점인 자바에서 당연히! var의 도입은 많은 반발이 있었지만, 편리한 경우도 꽤 있다. <br>
@@ -249,8 +271,14 @@ var는 코드 가독성을 박살낸다.
 첫 번째 줄은 직관적으로 `getChicken()`이 무엇을 반환하는지 알 수 있다. 하지만, 두 번째 줄은 대체 무엇을 반환하는지 확인하기 어렵다. (물론 사진에서는 인텔리제이가 알려주고 있다.)
 
 
+### 2.2.4 Thread-Local Handshakes
+`Thread-Local Handshakes` : 예전에는 GC시 발생하는 STW 발생 시 모든 쓰레드가 동시에 중단 되었다. **Thread-Local Handshakes는 STW시 Thread가 개별로 중단 가능하게 해준다.** <Br> 개발자가 직접 손댈 수 있는 영역은 아니고, gc 에서 STW시 쓰레드를 멈출 때 사용하는 safepoint 메커니즘의 최적화라고 한다. 나도 명확하게 설명하지 못 하겠다. 
+- [공식 문서](https://openjdk.org/jeps/312)
+- [GC safepoint가 궁금하다면..](https://github.com/10000-Bagger/free-topic-study/blob/main/jin/%5BJava%5D%20GC%201%ED%8E%B8%20-%20GC%20trade-off%EC%99%80%20safepoint.md)
 
-### 2.2.3 그 외 추가된 점들
+
+
+### 2.2.4 그 외 추가된 점들
 - Optional API 추가
   - `orElseThrow()` : 객체가 비어있는 경우 `NoSushElementException`를 던진다. 물론 지정할 수도 있다.
 
