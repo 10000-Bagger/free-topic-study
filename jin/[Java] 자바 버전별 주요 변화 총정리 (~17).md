@@ -200,7 +200,9 @@ GC는 Live 객체를 식별하고 사용하는 곳이 없는 객체를 지우는
 
 ![image](https://github.com/binary-ho/TIL-public/assets/71186266/6c94d6f1-90cc-4cc2-98fc-eb2f003af8e9)
 
-마킹은 SATB를 사용하고, Cycle Phase는 Young, Old GC가 발생하는 `Young Only Phase`와, Mixed GC가 발생하는 `Space Reclamaton Phase`로 나뉜다. 이 글에서는 G1GC를 간단하게만 다루는 것이 목적이므로, 래퍼런스를 참고하라 [Getting Started with the G1 Garbage Collector](https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html)
+마킹은 SATB를 사용하고, Cycle Phase는 Young, Old GC가 발생하는 `Young Only Phase`와, Mixed GC가 발생하는 `Space Reclamaton Phase`로 나뉜다. 이 글에서는 G1GC를 간단하게만 다루는 것이 목적이므로 다른 래퍼런스를 참고하라 
+- 더 자세히 쓴 버전 [Java G1GC](https://github.com/10000-Bagger/free-topic-study/blob/main/jin/%5BJava%5D%20GC%204%ED%8E%B8%20-%20G1GC.md)
+- 훌륭한 오라클 래퍼런스 [Getting Started with the G1 Garbage Collector](https://www.oracle.com/webfolder/technetwork/tutorials/obe/java/G1GettingStarted/index.html)
 
  
 ### 2.1.6 그 외 Compact String, Optional, Try-with-resource
@@ -511,12 +513,12 @@ static double getDoubleUsingSwitch(Object object) {
 물론 그 외에도 "새로운 기능 사용 가능", "이전 버전에서의 bug fix" 등의 장점은 기본적으로 따라온다. <Br> 
 하여튼, Java 17까지의 변화를 알아봤으니, 이번엔 Spring Boot 3로 마이그레이션 하는 법을 살펴보자. <br>
 너무 잘 쓰여진 글이 있어서 첨부한다. 래퍼런스를 너무 잘 달아 놓아서, 내가 적는게 무의미 할 것 같아 링크를 단다...
-- [Preparing for Spring Boot 3.0](https://spring.io/blog/2022/05/24/preparing-for-spring-boot-3-0)
+- [Preparing for Spring Boot 3.0](https://revf.tistory.com/260)
 
 
 ## Reference
 
-- 그동안 내가 작성해온 블로그와 TIL의 여러 글들에서...
+- 그동안 내가 작성해온 블로그와 TIL의 여러 글들..  + 자바의 정석 + 이펙티브 자바 + 모던 자바인 액션 등..
 - [호호의 Java 11](https://www.youtube.com/watch?v=LcIyHlE2NlA)
 - [Java Records : A Deep Dive - Muhammad Ali](https://medium.com/@ikhaleepha/java-records-a-deep-dive-e06fec984462)
 - [우리 팀이 Java 17을 도입한 이유](https://techblog.gccompany.co.kr/%EC%9A%B0%EB%A6%AC%ED%8C%80%EC%9D%B4-jdk-17%EC%9D%84-%EB%8F%84%EC%9E%85%ED%95%9C-%EC%9D%B4%EC%9C%A0-ced2b754cd7)
