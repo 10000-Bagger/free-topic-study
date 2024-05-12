@@ -101,8 +101,8 @@ if (partition == -1) {
 - partition()메서드의 반환값이 -1이면 첫번째 if문을 타게 된다.
 - RecordAccumulator 내에는 topic에 대한 정보를 가진 TopicInfo들이 저장되어 있다.
 - 각 TopicInfo는 내부에 BuiltInPartitioner를 가지고 있는데 BuiltInPartitioner가 target partition값인 StickyPartitionInfo를 가지고 있고 이 객체를 기반으로 partition을 할당 받는다.
-- 전체적인 동작 방식을 보면 RoundRobin 방식과 유사하지만 Message 1개당 Partition을 순차적으로 바꾸지 않는다.
-- 기본적으로 batch 1회 기준으로 RoundRobin이 적용되면 target partition으로 특정 양(내부 변수 stickyBatchSize)이상을 produce하기 전까지는 partition을 변경하지 않는다.
+- 전체적인 동작 방식을 보면 RoundRobin 방식이지만 Message 1개당 Partition을 순차적으로 바꾸지 않는다.
+- target partition으로 특정 양(내부 변수 stickyBatchSize)이상을 produce하기 전까지는 partition을 변경하지 않는다.
 
 ### BuiltInPartitioner.partitionForKey(...)
 ```java
