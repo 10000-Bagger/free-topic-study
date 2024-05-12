@@ -402,8 +402,10 @@ Lock을 획득한 상태에서 GC의 Stop the World가 발생하거나, 네트�
 
 ![image](https://github.com/binary-ho/TIL-public/assets/71186266/b2c15166-b8f5-45cd-9674-49ed0601dfa8)
 
-이런 방식으로 락이 있음에도 동시성 문제가 발생할 수 있다. 재미있는 사례라 공유한다. <br>
+
+문제 해결은 잠깐의 딜레이동안 Lock이 만료되지 않도록 Lock 점유 시간을 늘리는 방식으로 해결 했다고 한다. <Br>
+이런 방식으로 락이 있음에도 동시성 문제가 발생할 수 있다. 재미있는 사례이고, 문제 해결 과정이 너무 멋져서 공유한다. <br>
 또한 위 글에 따르면 Hbase에서도 인터넷 지연으로 인한 비슷한 이슈가 있었다고 해서 같이 공유한다.
 
 - [와디즈 - 분산 환경 속에서 ‘따닥’을 외치다](https://blog.wadiz.kr/%EB%B6%84%EC%82%B0-%ED%99%98%EA%B2%BD-%EC%86%8D%EC%97%90%EC%84%9C-%EB%94%B0%EB%8B%A5%EC%9D%84-%EC%99%B8%EC%B9%98%EB%8B%A4/)
-- [](https://blog.cloudera.com/tuning-java-garbage-collection-for-hbase/)
+- [Hbase 사례 + GC 튜닝 가이드](https://blog.cloudera.com/tuning-java-garbage-collection-for-hbase/)
