@@ -1,15 +1,16 @@
-# 간단한 동기성 이슈 해결 방식들
+# 다양한 동시성 이슈 해결 방식들과 기업 사례들
 1. Java가 제공해 주는 기능 활용
    1. Synchronized
    3. ReentrantLock과 ConcurrentHashMap 활용
 2. DB와 JPA 제공해 주는 기능 활용
    1. Select For Update 쿼리 (Pessimistic Lock)
    2. Optimistic Lock (JPA 제공)
-   3. Named Lock (MySQL Locking Function)
-3. In-memory DB Redis 활용
-   1. Lecttuce (setnx - Set If Not Exist 활용)
-   2. Redisson (컬리 분산락 사례)
-
+   3. Named Lock (MySQL Locking Function - 우아한 형제들 사례)
+3. Redis 활용
+   1. Lecttuce (setnx + Pub/Sub - 채널톡 사례)
+   2. Redisson (Lock Interface - 컬리 사례)
+4. Zookeeper 활용
+5. 특이 사례 : STW와 네트워크 지연으로도 동시성 문제가 발생할 수 있다.
 
 
 # 동시성 이슈
@@ -185,13 +186,8 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 1. Shared Lock을 활용하고 싶다면, `@Lock(value = LockModeType.PESSIMISTIC_READ)`
 2. `NOWAIT` 옵션을 사용하고 싶다면, `@Lock(value = LockModeType.PESSIMISTIC_FORCE_INCREMENT)`
 
-## 2.2 JPA가 제공해주는 Lock을 활용하는 방법
-JPA에도 Lock들이 있다. 아래 2가지 Lock을 사용해 동시성 문제를 해결할 수 있다.
+## 2.2 Optimistic Lock With JPA
 
-2. `Optimistic Lock`
-3. `Named Lock`
-
-### 2.2.1 Optimistic Lock
 실제로 Lock을 이용하지 않고 따로 버전을 저장한다. 이 버전 값을 활용해 정합성을 맞춘다. <Br> 
 
 먼저 데이터를 가져올 때, 버전값을 확인했다가, **실제 `UPDATE` 쿼리를 날리는 시점에 버전을 다시 확인한다. 이때, DB에 저장된 버전이 처음 SELECT시의 버전과 다르면 트랜잭션을 롤백한다!** 데이터가 성공적으로 Commit되면 버전 값을 업데이트 한다.
@@ -235,7 +231,9 @@ public void decrease(Long id, Long quantity) throws InterruptedException {
 
 <br>
 
-### 2.2.2 Named Lock
+
+
+## 2.3 Named Lock (MySQL Locking Function)
 
 이름을 가진 metadata locking 이다. 이름을 가진 lock을 획득한 후, 해제할 때까지 다른 세션은 이 lock을 획득할 수 없게 한다. <br> 
 예를 들어 "치킨"이라는 이름으로 Lock을 얻는다면, 같은 이름을 가진 락에 대해 접근을 막아준다. <br>
@@ -274,16 +272,138 @@ public interface LockRepository extends JpaRepository<Stock, Long> {
 
 이후 위와 같이 사용한다. `eatApple`을 수행하기 전, 이름을 통해 락을 얻고, finally를 통해 해제한다. 만약 식별자가 있다면 식별자를 통해 락을 잡을 수 있을 것이다. <br>
 
-
-
 Pessimistic Lock과 Exclusive하다는 점은 비슷하다. **Pessimistic Lock(SELECT FOR UPDATE)은 Row나 Table에 락을 건다면, Named Lock은 메타데이터에 락을 걸게 된다는 차이가 있다.** 주로 분산락을 구현할 때 사용된다. <br>
 
 또한 Pessimistic Lock은 타임 아웃 구현이 어렵지만, Named Lock은 위와 같이 간단한 쿼리문 작성만으로 손쉽게 구현할 수 있다는 것이 장점이다. 또한 단순 Insert시에도 정합성을 맞추는 데에 활용할 수 있다. <br>
 주의할 점으로는 transaction이 종료될 때 이 lock이 자동으로 해제되지 않으므로 별도의 명령어로 해제를 수행해주거나, 선점 시간이 끝나야 해제된다. <br> 
 그래서 트랜잭션 종료시 락 헤제와 세션관리를 잘 해줘야 한다.
 
+### 2.3.1 우아한 형제들 Named Lock 사례
+
+우형 비즈인프라 개발팀에서도 광고 시스템에서 발생한 동시성 관리 문제를 MySQL Named Lock을 사용해 분산락을 만들어 해결했다. <Br>
+문제 상황은 유저 신용카드 등록 갯수 제한을 Application 단에서 관리하고 있는데, 그 과정에서 동시성 문제가 발생한 것이다. <br>
+
+다른 기술로는 ZooKeeper, Redis를 고려했었지만, 두 기술이 사용되고 있지 않았는지 추가적인 인프라 구축 비용과 유지보수의 문제가 있었다. <br>
+반면 MySQL은 프로젝트 초반 부터 사용해왔기에 추가적인 비용이 없고 Named Lock의 "이름"을 Application 단에서 제어할 수 있으므로, 이를 활용했다고 한다.
+
+- [MySQL을 이용한 분산락으로 여러 서버에 걸친 동시성 관리](https://techblog.woowahan.com/2631/)
+
 
 # 3. 레디스를 활용한 방식
-## 3.1 Lettuce
+인-메모리 DB인 레디스를 활용해 분산 락을 구현할 수 있다. <br>
+여러 대의 서버가 있는 상황에서는 앞서 언급했던 방법 중, Java를 활용한 방법으로는 문제를 해결하기 어려울 것이다. <Br> 
+그래서 보통은 DB를 활용하던지, 아니면 서버들이 공유하는 메모리 DB인 레디스를 활용해 락을 구현하기도 한다. <Br> <br>
+Redis 연산 중 `SETNX`는 `SET if Not eXists`의 줄임말로, 어떤 값이 현재 저장되어 있지 않다면 저장하고, 이미 저장되어 있다면 저장하지 않는 연산이다. Redis는 데이터를 읽고 쓸 때, 싱글 스레드로 작동하기 때문에 어떤 값이 존재하냐 존재하지 않냐 여부를 확인할 때, 동시성 문제가 발생하지 않으므로 이 SETNX를 활용해 락을 구현할 수 있다. <Br>
+예를 들어 "key:1"이라는 값이 현재 저장되어 있지 않다면, 새로 저장하고 저장에 성공한 상태를 락을 획득했다고 본다. 다른 작업 작업 주체들은 "key:1"이라는 값이 이미 있는 경우 이미 락을 누군가 가지고 있다고 판단하여 획득에 실패하는 것이다. 자원을 다 사용한 이후, 저장된 "key:1"를 삭제하는데 이 행위를 락을 해제한 것으로 본다. <br> 
+이후 대기하고 있던 다른 작업 주체가 다시 저장을 시도했을 때 성공하게 되므로, 락을 획득할 수 있는 것이다. <br> 
+읽고 쓰는 작업이 싱글 스레드로 동작하기 때문에 위 과정은 원자성이 보장된다. <br> <br>
+
+보통 Application 단에서 레디스를 사용하기 위해 다양한 클라이언트 라이브러리를 사용하는데, 이들이 제공해주는 인터페이스에 따라 구체적인 코드는 달라질 수 있다. <br>
+그리고 Lock 대기시 redis가 지원해주는 pub/sub 기능을 통해 spin lock으로 구현하는 것을 피할 수 있는데, `wait-signal` 방식을 pub/sub 기능으로 구현한 것이다. <br>
+이러한 Redis를 활용한 방식은 DB를 사용하는 것에 비해 DB에게 주는 부담을 크게 줄여줄 수 있으므로 이미 Redis를 이미 사용하는 조직에서는 보통 Redis를 활용해 분산락을 구현하는 것 같다. <br> <br>
+
+앞서 우아한 형제들 비즈 인프라 개발 팀에서는 Redis가 없어 DB Named Lock으로 해결했지만, 채널톡, 와디즈 펀딩개발팀, 하이퍼 커넥트 Azar API팀, 컬리 풀필먼트 프로덕트 등 다양한 조직에서 Redis를 통해 분산락을 구현해 사용 중이다. <br>
+대부분 선택 이유중 하나로 "이미 Redis를 활용 중임"을 꼽았다. 
+
+<br>
+
+
+## 3.1 Lettuce + 채널톡 사례
+Lettuce는 Redis 클라이언트의 한 종류이다. <br>
+Lecttuce를 통해 구체적으로 분산락을 구현하는 코드를 확인해 보자. 제시된 코드는 채널톡 기술 블로그의 코드를 가져왔다. -> [Distributed Lock 구현 과정](https://channel.io/ko/blog/distributedlock_2022_backend) <Br> 
+
+앞서 언급한 setnx 연산을 활용하고, pub/sub 활용으로 개선했다. <br>
+
+```java
+public String tryAcquire(String lockKey, Duration expireTime) {  
+    if (redis.set(lockKey, uniqueId).nx().ex(expireTime) != null) {
+        return uniqueId;
+    } else {
+        return "LOCK_ACQUIRE_FAILED";
+    }
+}
+```
+
+락을 얻는 코드이다. `set()` 호출 뒤에 메서드 체이닝을 통해 `nx()`를 호출하고 있다. 이렇게 setnx를 호출할 수 있다. lockKey라는 key가 있는 경우 아무것도 하지 않고 락 획득을 실패했다고 본다. 그리고 없는 경우 unique한 값을 value로 세팅해준다. (key-value 방식으로 데이터 저장) <br>
+`ex()`를 통해 만료시간을 지정할 수 있는데, 이후 데이터가 지워진다. <Br>
+value는 클라이언트 마다 unique한 값으로 설정해주어야 한다. 왜냐하면, Timout된 Lock 삭제를 시도 할 때, 다른 클라이언트가 점유중이라면 삭제가 되지 않아야 하는데, 다 같은 value를 가지고 있다면 다른 클라이언트가 가진 락을 지워버리게 될 수도 있다. <br>
+그래서 키를 해제하는 코드는 아래와 같이 작성된다.
+
+```java
+if (redis.get(lockKey) == uniqueId) {  
+   redis.del(lockKey);
+   redis.publish("distributedLockChannel", lockKey);
+}
+```
+클라이언트 본인이 얻은 락이 맞는지 확인하기 위해 uniqueId를 비교하고 있다. <Br>
+이후 publish를 통해 Key을 Subscribe하고 있는 클라이언트들에게 Lock의 해제를 알려준다! 이 키의 락 헤제만 기다리는 이들에게 메시지를 보내는 것이다. <Br>
+동시성 이슈를 피하기 위해 전부 원자적으로 실행 되어야 한다. 이는 LUA Script를 활용해 구현할 수 있다.
+
+<Br> <br>
+
+Lock을 기다리는 클라이언트들은 언제 다시 Lock 획득을 시도할까? 바로 Sub중인 채널에 메시지가 pub될때 마다이다. <br>
+문제는, 네트워크 장애나 지연, 혹은 GC Stop-the-world로 인해 Lock Timeout이 되어 Message가 누락될 수도 있다. 그래서 timeout이 되도록 메시지가 아예 오지 않으면 한번쯤 재시도를 해준다.
+
+<Br> <br>
+
+이 방법에는 Single Redis에 의존해 결함 허용성이 낮다는 단점이 있는데, 락 HA를 위한 Redis Clustering은 좀 심해서, Redlock 알고리즘을 사용한다. 자세한 것은 채널톡 블로그의 "해당 Lock의 문제점" 부분을 읽어보자. [Distributed Lock 구현 과정](https://channel.io/ko/blog/distributedlock_2022_backend)
+
 ## 3.2 Redisson
-## 3.3 두 라이브러리 비교
+Redisson도 레디스 클라이언트 라이브러리의 하나이다. Redission은 기본적으로 Lock interface를 지원해주기 때문에, 따로 setnx를 직접 사용하며 락 관리를 구현할 필요가 없다. <br>
+
+
+컬리 또한 이미 Redis를 사용하고 있기에 추가적인 인프라 구축이 없어 사용했다. 또한, MySQL Named Lock을 사용하는 경우 락을 위한 별도의 커넥션 풀을 관리하거나 락에 관련된 부하가 부담되어 Redis를 사용했다고 한다. <Br>
+또한 Redisson을 사용한 이유는 Lock Interface의 지원으로 직접 여러 기능을 구현할 필요가 없어 더욱 안전하기 떄문이라고 한다. <br>
+그리고 이미 구현되어 있는 Lock도 Pub/Sub을 활용해 구현되어 있어 spin lock보다 낫다 <br>
+
+Lock Interface를 활용해 AOP로 구현한 코드는 아래 글에서 확인해볼 수 있다.
+- [컬리 - 풀필먼트 입고 서비스팀에서 분산락을 사용하는 방법](https://helloworld.kurly.com/blog/distributed-redisson-lock/) <br>
+
+다른 글도 궁금하다면 아지르 팀의 글을 읽어보자.
+- [레디스와 분산 락(1/2) - 레디스를 활용한 분산 락과 안전하고 빠른 락의 구현](https://hyperconnect.github.io/2019/11/15/redis-distributed-lock-1.html)
+
+
+## 3.3 두 클라이언트 라이브러리 비교
+### 3.3.1 Lettuce
+1. 구현이 간단하다.
+2. spring data redis를 이용하면 lettuce가 기본이기 때문에 별도의 설정 없이 바로 적용 가능
+3. 단, Pub/Sub을 활용하지 않으면 기본적으로 spin lock 방식이기 때문에 많은 스레드가 lock 획득 대기 상태라면 redis에 부하가 갈 수 있다. 결국 사용자가 손이 많이 간다. 락을 얻고 해제하고, 재시도하고, 구독자들에게 알리는 대부분의 과정을 직접 구현해야 한다.
+
+### 3.3.2 Redisson
+1. lock 관리 API를 라이브러리 차원에서 제공해준다는 것이 큰 장점. <br> **락 획득 재시도 등의 다양한 로직을 기본으로 제공하고, Pub/Sub으로 구현되어 있어 Lecttuce 대비 Redis 부하가 덜하다.**
+2. 별도의 라이브러리를 이용해야 한다. (기본이 아니다.)
+
+<br>
+
+딱히 재시도가 필요 없고 간단하게 낮은 요청 횟수에서 사용하려면 Lecttuce도 나쁘지 않지만, 그 외엔 Redission이 나은 것 같다. <br>
+그리고 DB를 사용하는 방식과 Redis를 사용하는 방식을 비교해보자면, 현재 Redis를 사용중이지 않고, 오직 Lock만을 위해 Redis를 사용하는 것은 관리 포인트가 너무 많아지기 때문에 좋지 않다. 하지만, 이미 사용하고 있다면 Redis를 고려하는 것도 좋다. <Br>
+
+왜냐하면 DB 부하에도 좋고, 성능에도 좋다. 
+1. Lock을 위한 DB의 추가 부하를 줄여줄 수 있다.
+2. DB를 다녀오는 것과 memory에서 처리하는 것은 엄청난 속도 차이가 난다.
+
+그래서 낮은 트래픽에서 간단하게만 사용할 것이고 Redis가 없다면 DB를, 아니라면 Redis를 고려하면 될 것 같다.
+
+
+# 4. Zookeeper 활용
+Zookeeper로도 분산락을 구현할 수 있다. <br>
+방법 자체는 아래 글에서 확인하자.
+- [[zookeeer-2] 주키퍼(zookeeper) 분산 락처리](https://zaccoding.tistory.com/27)
+
+<br> <br>
+
+Zookeeper를 활용하는 방법은 지금은 거의 쓰지 않는 방법이다. 왜냐하면 주키퍼 자체가 단지 분산락을 위해 사용하기엔 너무 무겁다는 것이 문제이다. 또한, 락이 중요하다면 HA를 위해 클러스터링이나 다른 조치를 취할텐데 안 그래도 무거운데 다중화까지 한다면 서버가 버거워 할 것이다. <br>
+
+대안으로도 Redis도 있고 DB로도 해결할 있기 때문에 지금은 거의 쓰지 않는다고 하는 것 같다. 물론 Redis도 없고 이미 주키퍼 인프라가 잘 되어 있다면 고려해볼 수 있는 방법일 수도 있을 것 같다.
+
+# 5. STW와 네트워크 지연으로도 동시성 문제가 발생할 수 있다.
+Redis를 활용한 Lock이 있음에도 동시성 문제가 발생할 수도 있다. <br>
+Lock을 획득한 상태에서 GC의 Stop the World가 발생하거나, 네트워크가 지연되었고 아직 데이터를 쓰기 전인데 그 사이에 Lock이 만료되어 반환되었다고 생각해보자. 그리고 홀랑 다른 서버에서 데이터를 저장했다. <br>
+
+![image](https://github.com/binary-ho/TIL-public/assets/71186266/b2c15166-b8f5-45cd-9674-49ed0601dfa8)
+
+이런 방식으로 락이 있음에도 동시성 문제가 발생할 수 있다. 재미있는 사례라 공유한다. <br>
+또한 위 글에 따르면 Hbase에서도 인터넷 지연으로 인한 비슷한 이슈가 있었다고 해서 같이 공유한다.
+
+- [와디즈 - 분산 환경 속에서 ‘따닥’을 외치다](https://blog.wadiz.kr/%EB%B6%84%EC%82%B0-%ED%99%98%EA%B2%BD-%EC%86%8D%EC%97%90%EC%84%9C-%EB%94%B0%EB%8B%A5%EC%9D%84-%EC%99%B8%EC%B9%98%EB%8B%A4/)
+- [](https://blog.cloudera.com/tuning-java-garbage-collection-for-hbase/)
