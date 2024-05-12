@@ -1,14 +1,15 @@
 # 간단한 동기성 이슈 해결 방식들
-1. Java가 제공해 주는 기능 활용하기
+1. Java가 제공해 주는 기능 활용
    1. Synchronized
-   2. ReentrantLock과 ConcurrentHashMap 활용
-2. DB 활용하기
-   1. Select For Update (Pessimistic Lock)
-   2. Optimistic Lock
-   3. Named Lock
-3. In-memory DB Redis 활용하기
-   1. 라이브러리 Lecttuce (setnx - Set If Not Exist 활용)
-   2. 라이브러리 Redisson (컬리 분산락 사례)
+   3. ReentrantLock과 ConcurrentHashMap 활용
+2. DB와 JPA 제공해 주는 기능 활용
+   1. Select For Update 쿼리 (Pessimistic Lock)
+   2. Optimistic Lock (JPA 제공)
+   3. Named Lock (MySQL Locking Function)
+3. In-memory DB Redis 활용
+   1. Lecttuce (setnx - Set If Not Exist 활용)
+   2. Redisson (컬리 분산락 사례)
+
 
 
 # 동시성 이슈
@@ -58,22 +59,24 @@ synchronized를 사용해 사과의 갯수를 파악하고, 줄이고, 저장하
 ```java
 // 프록시 클래스의 eatApple
 public void eatApple(Long quantity) {
-  try {
+  try (connection) {
     // 트랜잭션 시작 부분
     startTransaction();
 
     // 실제 메서드 호출 부분
     fruitService.eatApple(quantity);
 
-} catch(...) { ... } 
-  finally() {
+    // commit
+    doCommit();
 
-    // 트랜잭션을 끝내는 부분
-    commitTransaction();
-  }
+  } catch(SQLException e) { 
+    // rollback
+    rollback();
+  } 
 }
 ```
 
+내가 만든 메서드를 위와 같은 트랜잭션 코드들 사이에 넣어 호출할 것이다. <br>
 잘 보면, synchronized가 실제로 걸리게 되는 부분은 `fruitService.eatApple(quantity)` 부분일 것이다. 그리고 DB 변경 사항이 실제로 저장되는 것은 `commitTransaction`이 호출된 이후일 것이다. <br> 
 결국 `fruitService.eatApple(quantity)` 이후 실제로 변경 사항이 Commit 되기 까지 작은 틈새들이 생기게 된다! <br>
 `5 - 3 = 2`를 계산한 이후, 엔티티에는 해당 값을 썼지만, 실제로 DB에 저장 요청을 보내고 Commit을 수행하기 전에 다른 스레드가 값을 Read한다면.. 잘못된 값을 읽게 되는 것이다. <br>
@@ -136,17 +139,22 @@ public class ExclusiveRunner {
 unlock은 finally에서 호출되게 하여 무조건 unlock이 되도록 하고, 만약 `tryLock`이 제한 시간이 넘도록 계속 예외가 발생한다면 TimeoutException을 던지도록 구현했으나, 실제로 사용할 때는 리트라이 로직을 넣을 것 같다. <br>
 
 
-# 2. DB가 제공해주는 기술을 활용한 해결
-## 2.1 Pessimistic Lock - `SELECT FOR UPDATE` Query
+# 2. DB와 JPA가 제공해주는 기술을 활용한 해결
+이번에는 DB와 JPA가 제공해주는 기능을 활용해 문제를 해결해보자. <br>
+첫 번째로는 격리 수준 자체를 바꾸는 방법이 있다. <br>
+기본적으로 MySQL InnoDB는 `Repeatable Read`, Postgresql은 `Read Comitted`를 격리수준으로 설정 되어 있다. 격리 수준을 바꿈으로써 몇 가지 정도의 동시성 문제는 해결할 수 있지만, 성능을 매우 저하 시키기 때문에, 좋은 방법이라고 하긴 어렵다. 기본 쿼리나 DB 수준에서 제공되는 Lock들을 활용해 해결해보자. <Br>
 
-Select For Update는 MySQL에서 8.0 부터 사용할 수 있는 쿼리의 한 종류로, 말 그대로 Update를 위한 Select를 제공해주는데, **정확한 값 Update를 할 수 있도록 검색된 모든 행에 대해, 다른 트랜잭션의 접근을 막아준다.** <br>
+## 2.1 `SELECT FOR UPDATE` Query (Pessimistic Lock)
+
+Select For Update는 MySQL에서 8.0 부터 사용할 수 있는 쿼리의 한 종류로, 말 그대로 Update를 위한 Select를 제공해주는데, **정확한 값 Update를 할 수 있도록 검색된 모든 행과 팬텀 리드가 발생할 수 있는 레코드에 대해, 다른 트랜잭션의 접근을 막아준다.** <br>
 
 ```sql
 SELECT * FROM fruits f WHERE f.name = 'apple' FOR UPDATE;
 ```
 
 간단하게 DB 수준에서 동시성 이슈를 막아줄 수 있다. <Br>
-하지만 언급한 것과 같이 검색된 모든 행에 Lock이 걸리게 되므로, 성능 저하나 데드락의 원인이 될 수 있기 때문에, 대기 시간이나 옵션을 잘 사용해야 한다. <br>
+하지만 언급한 것과 같이 검색된 행 뿐만 아니라 팬텀 리드가 발생할 수 있는 레코드에도 Lock이 걸리게 된다. 물론 DB에 따라 다른데, 이는 **MySQL에서는 Gap Lock 때문이다.** 갭락은 예를 들어 이름을 `LIKE = 'L%'`로 검색했을 때, 실제 L로 시작하는 레코드만 잠그는게 아니다. 실제 레코드들은 레코드 락이 걸리게 되고, **모든 L로 시작하는 이름의 insert를 막는다.** 이를 Gap Lock이라고 한다. <br>
+따라서 조건에 따라 락의 범위가 클 수 있고, 성능 저하나 데드락의 원인이 될 수 있기 때문에, 대기 시간이나 옵션을 잘 사용해야 한다. <br>
 옵션들
 1. `NOWAIT` : `NOWAIT`은 Lock을 얻을 수 없는 경우 대기하지 않고 즉시 에러를 발생시키는 옵션이다. `FOR UPDATE NOWAIT`와 같이 사용한다.
 2. `SKIP LOCKED` : SKIP LOCKED 옵션은 다른 트랜잭션이 이미 Lock을 획득한 행을 건너뛰고, Lock이 없는 행만 반환한다. 
@@ -170,18 +178,18 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 ```
 
 위와 같이 `@Qurey`와 함께 Native Query를 작성해주고 `@Lock(value = LockModeType.PESSIMISTIC_WRITE)`을 통해 손쉽게 설정할 수 있다. <br>
-쿼리 발행을 확인해 보면, 맨 끝에 `FOR UPDATE`가 붙어서 발행된다!
+쿼리 발행을 확인해 보면, 맨 끝에 `FOR UPDATE`가 붙어서 발행된다! <br> <br>
 
 
-## 2.2 DB가 제공해주는 Lock을 활용하는 방법
-DB에서도 자체적으로 제공하는 Lock들이 있다. 아래 3가지 Lock을 사용해 동시성 문제를 해결할 수 있다.
+코드에선 가장 기본적인 `PESSIMISTIC_WRITE` 옵션을 사용했는데, 다른 옵션을 사용할 수도 있다. <br>
+1. Shared Lock을 활용하고 싶다면, `@Lock(value = LockModeType.PESSIMISTIC_READ)`
+2. `NOWAIT` 옵션을 사용하고 싶다면, `@Lock(value = LockModeType.PESSIMISTIC_FORCE_INCREMENT)`
 
-1. `Pessimistic Lock` (앞서 보임)
+## 2.2 JPA가 제공해주는 Lock을 활용하는 방법
+JPA에도 Lock들이 있다. 아래 2가지 Lock을 사용해 동시성 문제를 해결할 수 있다.
+
 2. `Optimistic Lock`
 3. `Named Lock`
-
-JPA와 함께 활용하는 방식을 보일것이다. 어차피 JPA는 App단에서 DB 기능을 쓸 수 있도록 돕는 것이기 때문에 JPA 없이도 원래 DB 설정으로 아래 제시한 Lock들을 사용할 수 있다.
-
 
 ### 2.2.1 Optimistic Lock
 실제로 Lock을 이용하지 않고 따로 버전을 저장한다. 이 버전 값을 활용해 정합성을 맞춘다. <Br> 
@@ -190,12 +198,7 @@ JPA와 함께 활용하는 방식을 보일것이다. 어차피 JPA는 App단에
 
 <br> <br>
 
-별도의 락을 잡지 않고 저장된 버전을 통해 판단하므로, 경쟁 상황이 그리 심하지 않은 경우 `Pessimistic Lock`보다 성능이 좋다! <br>
-단점도 있다.
-1. 재시도하는 로직을 프로그래머가 직접 작성해줘야 해서 번거롭고, 실수할 수도 있다. (버전이 다른 경우 트랜잭션이 실패하기 때문에, 저장해야 한다면 재시도 로직을 작성해야 한다.)
-2. Entity 객체에 version field를 추가해야 한다. -> 추가 관리 포인트가 될 수 있다.
-3. 버전 값이 달라져 업데이트가 실패하는 경우가 많은 경우, 요청을 여러번 보내야 하므로 Pessimistic Lock 보다 성능이 떨어진다고 할 수 있다.
-
+이 버전 값을 엔티티에 추가하면, JPA가 관리해준다. 데이터가 update될 때마다 값을 늘려주는데, 검색 쿼리에 `WHERE version = 저장한 버전` 내용을 붙여 준다. 그래서 버전이 달라지면 쿼리가 실패하는 것이다.
 
 
 <br>
@@ -205,6 +208,8 @@ JPA와 구현하는 법을 살펴보자. 일단 엔티티에 `@Version` 어노�
   @Version
   private Long version;
 ``` 
+
+이 `@Version` 어노테이션은 숫자형 int, long, short와 timestamp 형식(DB의)에 적용될 수 있다. <Br>
 
 이후 아래와 같이 재시도 로직을 작성해 준다.
 
@@ -222,13 +227,20 @@ public void decrease(Long id, Long quantity) throws InterruptedException {
 }
 ```
 
-경쟁 상황이 별로 없다면 성능적으로 꽤나 괜찮지만, 상당히 번거롭고 누군가 실수하기 딱 좋은 방식인 것 같다.
+별도의 락을 잡지 않고 저장된 버전을 통해 판단하므로, 경쟁 상황이 그리 심하지 않은 경우 `Pessimistic Lock`보다 성능이 좋다! <br>
+하지만..
+1. 재시도하는 로직을 프로그래머가 직접 작성해줘야 해서 번거롭고, 실수할 수도 있다. (버전이 다른 경우 트랜잭션이 실패하기 때문에, 저장해야 한다면 재시도 로직을 작성해야 한다.)
+2. Entity 객체에 version field를 추가해야 한다. -> 추가 관리 포인트가 될 수 있다.
+3. **버전 값이 달라져 업데이트가 실패하는 경우가 많은 경우, 요청을 여러번 보내야 하므로 Pessimistic Lock 보다 성능이 떨어진다.** 예를 들어 100명이 동시에 요청을 보내는 경우 99명이 실패해서 재시도를 하게 된다. 99명은 또 동시에 보내서 98명이 재시도를 하게 된다.. 그래서 (100 + 1) * 50 번의 쿼리가 발행된다. 조심..해야겠지?
+
+<br>
 
 ### 2.2.2 Named Lock
 
 이름을 가진 metadata locking 이다. 이름을 가진 lock을 획득한 후, 해제할 때까지 다른 세션은 이 lock을 획득할 수 없게 한다. <br> 
-
-일단 아래와 같이 LockRepository를 선언한 다음 Native Qurey를 아래와 같이 작성해준다. 
+예를 들어 "치킨"이라는 이름으로 Lock을 얻는다면, 같은 이름을 가진 락에 대해 접근을 막아준다. <br>
+앞서 보인 ReentrntLock과 ConcurrentHashMap을 사용한 방법과 거의 유사하다. <br>
+MySQL에서 기본적으로 제공해주는 [Locking Function](https://dev.mysql.com/doc/refman/8.0/en/locking-functions.html)들인 `get_lock()`이나, `release_lock()`등을 이용해 구현할 수 있다. JPA로 사용할 때는 아래와 같이 LockRepository를 선언한 다음 Native Qurey를 아래와 같이 작성해준다. 
 
 ```java
 public interface LockRepository extends JpaRepository<Stock, Long> {
@@ -241,7 +253,8 @@ public interface LockRepository extends JpaRepository<Stock, Long> {
 }
 ```
 
-쿼리를 보면 String 값의 key가 있는데, 앞서 보인 ReentrantLock와 CuncurrentHashMap을 활용한 사례처럼 같이 특정 "key" 값을 통해 락을 제어할 수 있다는 것이 장점이다. 이러한 key를 사용한다고 해서 Named Lock이다. 
+쿼리를 보면 String 값의 key가 있는데, 특정 값을 통해 락을 제어할 수 있다는 것이 장점이다. 예를 들어 레코드의 PK를 Lock의 값으로 쓰면, 한 레코드 단위로 락을 걸 수 있을 것이다. 이러한 이름으로 구분되는 key를 lock에 사용한다고 해서 Named Lock이다. 
+
 <br>
 
 잘 보면 `get_lock`의 두번째 파라미터로 숫자를 넣어주는데, 간편하게 Lock 타임 아웃 시간을 설정할 수 있어서 좋다. <br>
