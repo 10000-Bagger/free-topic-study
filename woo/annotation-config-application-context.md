@@ -4,7 +4,7 @@ Spring IoC는 스프링 프레임워크의 핵심이다. IoC란 Inversion of Con
 이와 관련된 용어로 DI는 의존성 주입을 뜻하며 Spring에서는 DI를 통해 IoC를 달성하며 IoC의 구체화된 형태가 DI이다.   
 <br></br>
 
-![applicationContext.jpg](../../free-topic-study/woo/img/applicationContext.jpg)
+![applicationContext.jpg](img/applicationContext.jpg)
 제어권을 넘겨 받는 주체가 누구인지 또한 중요한데 이 주체가 IoC Container이다. 공식 문서에서는 ApplicationContext를 IoC Container라 부른다.
 위 다이어그램은 ApplicationContext의 의존 관계를 보여주는데 다양한 interface를 상속하기 때문에 다양한 기능을 제공한다고 이해할 수 있다. 
 ApplicationContext 즉, IoC Container가 수행하는 중요한 작업 중 하나는 Spring Bean들을 초기화/조립/구성하는 역할이다. 
