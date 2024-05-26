@@ -20,8 +20,12 @@ ThreadPoolExecutor란 ExecutorService의 구현체 중 하나로, 제출된 작�
 위처럼 다양한 요소를 직접 설정할 수 있다. <br>
 <!-- 그리고 매우 매우 아름다운 방법으로 스레드의 갯수를 조절하는데, 한번 알아보자. (ExecutorService 자체에 대한 설명은 생략) <br> -->
 
+![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/ebb10b9a-a354-4831-9714-0da035385bd8)
+
+스래드 갯수는 위 흐름도 대로 관리된다. 어떤 상황에서 스레드가 늘어나고 줄어드는지, 또 작업들을 위한 Blocking Queue는 어떻게 사용되는지 알아보자.
+
 # 1. Thread 갯수는 어떻게 관리되는가?
-가장 아름다운 부분 먼저 알아보자. <br>
+
 스레드 갯수는 아래 2개의 파라미터에 의해 결정된다. 
 1. `corePoolSize`
 2. `maximumPoolSize`
@@ -33,13 +37,29 @@ ThreadPoolExecutor란 ExecutorService의 구현체 중 하나로, 제출된 작�
 `MaximumPoolSize`라는 파라미터가 있으면, 나머지 하나가 Minimum Pool Size일거 같은데 왜 "Core" Pool Size일까? <br>
 Core라고 부르는데엔 이유가 있다. **ThreadPoolExectorService는 생성시 `corePoolSize` 갯수만큼 스레드를 만들어 내지 않는다.** (이름을 보면 뭔가 기본적으로 갖고 있을 것만 같다.) <br> 
 
-**새로운 작업이 제출 되었을 때, 만약 실행중인 스레드의 갯수가 `corePoolSize` 미만이라면, 그때 `corePoolSize`가 될 때까지 스레드를 만들어 내서 작업을 할당한다!** <br>  
-굳이 객체가 만들어질 때 미리 core 갯수만큼 스레드를 만들지 않고, 필요할 때 만들어 낸다! 반대로 객체가 만들어질 때 미리 corePoolSize 갯수만큼 준비했으면 좋을 것 같은 상황도 있을 것인데, `prestartCoreThread()`, `prestartAllCoreThread()`메서드를 통해 미리 스레드를 준비할 수도 있다. <br> <br>
+**새로운 작업이 제출 되었을 때, 만약 실행중인 스레드의 갯수가 `corePoolSize` 미만이라면, 그때 `corePoolSize`가 될 때까지 스레드를 만들어 내서 작업을 할당한다!** (스레드 팩토리가 이러한 스레드를 만들어낸다.) <br>
+굳이 객체가 만들어질 때 미리 core 갯수만큼 스레드를 만들지 않고, 필요할 때 만들어 낸다! 반대로 객체가 만들어질 때 미리 corePoolSize 갯수만큼 준비했으면 좋을 것 같은 상황도 있을 것인데, `prestartCoreThread()`, `prestartAllCoreThread()`메서드를 통해 미리 스레드를 준비할 수도 있다. 
+
+![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/5b0e2c5b-120e-47b3-ac54-c867a9f88da1)
+
+
+이 상황이 위 그림의 빨간 박스에 나타나있다. execute 실행시 스레드 갯수가 corePoolSize 미만인 경우 `addWorker()`가 호출된다. 
+
+<br> <br>
+
 
 CorePoolSize에 작업이 모두 할당된 다음 추가 요청이 들어오면, MaxSize까지 스레드를 만들어 낼 것만 같지만, 또 그렇지 않다. <br> 
 **`CorePoolSize`를 초과하는 경우 일단 Blocking Queue에 작업을 추가하고, 이 Queue가 가득차게 되는 경우에만 새로운 스레드를 생성해낸다! 그 상한 값이 maximumPoolSize가 되는 것이다.** <br>
 그러니까, 일단은 Core Size로 계속해서 버티면서, Blocking Queue에 작업을 밀어 넣다가, Queue까지 가득차게 되면 그때 스레드를 만들어 내는 것이다! **스레드를 미리 생성하지 않고 최대한 미루고 미룬다!** 아주 스마트 하다. <br> 
-그리고 스레드가 maximumPoolSize 이상 실행중이고, 작업도 모두 할당되고, 큐도 꽉찼다면, 이후 요청은 거절된다! (이때 Reject Handler로 거절시 동작을 결정할 수 있다.) <Br> <br>
+
+![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/37d6040a-a35d-4683-9748-64528f883146)
+
+위 상황이 빨간 박스친 부분인데, 큐가 가득차지 않은 경우 스레드를 늘리지 않고, 큐에 작업만 추가한다.  <br>
+
+![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/309360dc-7305-4136-b91e-dde7d3384113)
+
+
+그리고 스레드가 maximumPoolSize 이상 실행중이고, 작업도 모두 할당되고, 큐도 꽉찼다면, 이후 요청은 거절된다! 이때 Reject Handler로 거절시 동작을 결정할 수 있는데, 사용법은 `2. 거절된 작업들은 어떻게 처리될까`에서 확인하자. <Br> <br>
 
 ## 1.1 Blocking Queue의 사이즈는 어떻게 조절하는가?
 우리는 "요청이 적은 평소 상황"과 "요청이 몰리는 상황"에 쓰일 스레드 갯수 `corePoolSize`와 `maximumPoolSize`로 지정할 수 있었다. <br>
@@ -209,10 +229,30 @@ executor의 상태를 확인한 다음, run을 호출해서 직접 작업을 수
 
 너무 잔인하다. 오랜 시간을 고되게 기다려온 작업은 수행되지 못하고 poll당하고 새로운 작업을 위해 execute를 수행한다. 그래서 DiscardOldest이다. 가장 오래된 작업이 버려진다. <br>
 
-<!-- # 3. Thread Pool Hook 메서드
-ThreadPoolExecutor는 
+# 3. Thread Pool Hook 메서드
+ThreadPoolExecutor는 작업 실행 시점에 적용할 수 있는 Hook Method를 제공해준다. execute의 전, 후와 스레드 풀 종료시 실행되는 메서드를 정의할 수 있다. 전후에 로깅을 할 수도 있을테고, 작업 전 이것저것 준비할 수도 있을 것이다. <br>
 
-# 4. 생명주기 -->
+일단 ThreadPoolExecutor를 확장하는 클래스를 만들어준 다음, 아래 메서드들을 재정의함으로써 쉽게 동작을 정의해줄 수 있다. 
+
+1. `beforeExecute(Thread t, Runnalbe r)` : **각 execute의 실행 전에 한번씩 호출된다.**
+2. `afterExecute(Thread t, Throwable r)` : **각 execute의 실행 후에 한번씩 호출된다.** <br> 인자의 Throwable은 무엇일까? 예외가 발생한 경우 이 `afterExecute()`에서 예외를 처리해줄 수 있다. 예외가 발생하지 않았다면 null이 들어있다.
+3. `terminated()` : 스레드 풀이 완전히 종료된 뒤에 호출된다. <br> 앞선 두 메서드는 작업마다 호출됐고, 이 메서드는 한번만 호출되니 마무리 작업을 정의할 수 있을 것이다. 뒤에 나올 TIDYING 상태와 TERMINATED 상태의 중간에 호출된다. 
+
+
+# 4. ThreadPoolExecutor의 생명 주기와 상태
+ThreadPoolExecutor는 자체적으로 생명 주기와 상태를 갖고, 상태별로 작업 스레드 풀의 동작이 결정된다. <br>
+
+![image](https://github.com/10000-Bagger/free-topic-study/assets/71186266/ebb10b9a-a354-4831-9714-0da035385bd8)
+
+상태들을 설명하기 위해 그림 먼저 보자. 그림에서 빨간색 글씨로 적힌 내용들이 Exector의 상태를 나타낸다.
+
+## 4.1 상태
+1. RUNNING : 새로운 작업을 수용하고 대기중인 작업을 처리한다.
+2. SHUTDOWN : 스레드 풀을 종료하는 상태 + **현재 대기 중인 작업은 처리하지만, 새 작업을 수용하지 않는다.** 위 그림과 같이 현재 대기중인 작업들이 있다면 대기한다. <br> `shutdown()`의 호출로 RUNNING 상태에서 SHUTDOWN 상태로 전환할 수 있다. (왼편의 Main에서 아래로 이어지는 선 참고) 
+3. STOP : 스레드 풀을 종료하는 상태 + **현재 진행중인 작업을 중단한다!** 새 작업도 수용하지 않는다. <br> 위 그림과 같이 STOP 상태인 경우 `thread.interrupt()`를 호출한다! <br> SHUTDOWN 상태에서 `shutdownNow()` 메서드가 호출되면 STOP 상태가 된다.
+4. TIDYING : SHUTDOWN이나 STOP 상태에서 큐와 풀이 모두 비게 되면 이 상태로 접어든다.모든 작업이 종료된 상태이다. worker의 갯수를 저장하는 workerCount가 0이 되면 `terminated()` 훅 메서드를 실행한다.
+5. TERMINATED : `terminated()`가 완료된 이후 이 상태가 된다. 이제 스레드 풀이 종료된 상태이다. 
+
 
 
 <!-- 
