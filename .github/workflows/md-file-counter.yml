@@ -1,0 +1,44 @@
+name: 10000-bagger Auto Markdown File Count Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  build:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: count files
+      run: |
+        python3 -m counter
+
+    - name: Commit changes
+      run: |
+        git config --local user.email "dfghcvb11@naver.com"
+        git config --local user.name "binary-ho"
+        git add -u
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "10000-bagger auto md file counter"
+        fi
+
+
+    - name: Push changes
+      run: |
+        git push origin main
