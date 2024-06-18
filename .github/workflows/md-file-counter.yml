@@ -41,4 +41,5 @@ jobs:
 
     - name: Push changes
       run: |
+        git remote set-url origin https://binary-ho@github.com/10000-Bagger/free-topic-study.git
         git push origin main
