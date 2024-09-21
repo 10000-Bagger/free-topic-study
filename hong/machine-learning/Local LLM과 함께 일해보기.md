@@ -238,5 +238,65 @@
 - 학습시킬 데이터가 잘 변하지 않고, 수량이 많지 않다면 해당 기능을 활용하면 LangChain 없이도 RAG가 가능!
 <img width="1329" alt="Screenshot 2024-08-29 at 7 30 38 PM" src="https://github.com/user-attachments/assets/18b3381f-20d0-4e5f-af88-080297c04ab2">
 
+## Action Items
+- 한국어 최적화된 모델을 찾아서 적용하기
+- 사내 자료에 대한 질의응답이 가능하도록 모델 개선하기
 
-** 다음 PR에서는 RAG 적용 및 실행, 개선 등의 과정을 실험해 보겠습니다..
+### 사전 리서치
+- [Ollama와 Llama3 모델로 나만의 챗GPT 만들기](https://www.youtube.com/watch?v=GGPTbZ3uG2U)
+  - 한국어 튜닝된 모델
+    - Google Colab
+      - [Google Colab features you may have missed](https://www.youtube.com/watch?v=rNgswRZ2C1Y)
+        - Colaboratory(Colab)을 통해 브라우저 내에서 Python 스크립트를 작성하고 실행할 수 있음.
+          - 구성이 필요 없음
+          - 무료로 GPU 사용
+          - 간편한 공유
+      - Open WebUI 세부 설정 확인(Google Colab에서 띄워둔 LLM 연동 가능)
+  - [외부 문서 사용으로 정확도 높이기 (Ollama RAG)](https://youtube.com/watch?v=_0M7nInr4Us)
+    - 채팅창에 질문할 때 외부 문서를 업로드하고 질문을 하면 정확한 답을 얻을 수 있음.
+    - LLM을 대할 때는 “자나치게 열정적인 신입사원을 대하듯이”
+    - pdf 문서로 업로드 함 (txt, pdf 다 가능 ← 외부 자료가 잘 파싱되지 않았는지 확인 필요)
+    - 평소에 자주 업로드하는 부분은 workspace > documents에 업로드해두기
+      - 채팅창에서 `#` 를 입력하면 해당 문서를 참조할 수 있음.
+  - [Ollama 한국어 모델 사용하기 (Open WebUI](https://www.youtube.com/watch?v=VrVTWX0H44I&list=PLVjIhc0am1qIbIri-OtwAQRFmc-4AXQ_v&index=2)
+    - Ollama에 없는 모델을 import 해서 사용하기
+      - https://github.com/ollama/ollama/blob/main/docs/import.md
+      - GGUF 파일의 경우, Modelfile을 만들어서 import하기
+      - Hugging Face: 다양한 LLM을 찾을 수 있음.
+        - [huggingface Models](https://huggingface.co/models?library=gguf&sort=trending&search=korean)
+        - [yanolja](https://huggingface.co/yanolja)/[**EEVE-Korean-Instruct-10.8B-v1.0](https://huggingface.co/yanolja/EEVE-Korean-Instruct-10.8B-v1.0) upstage/SOLAR-10.7B 모델을 야놀자에서 Finetuning한 모델 사용.
+        - https://github.com/ollama/ollama/blob/main/docs/modelfile.md
+          - custom 설정 가능.
+          - 예시 Modelfile:
+                    
+                    ```
+                    FROM ./ggml-model-Q5_K_M.gguf
+                    
+                    PARAMETER temperature 0.6
+                    PARAMETER top_p 0.9
+                    
+                    TEMPLATE """{{ if .System }}<|im_start|>system
+                    {{ .System }}<|im_end|>
+                    {{ end }}{{ if .Prompt }}<|im_start|>user
+                    {{ .Prompt }}<|im_end|>
+                    {{ end }}<|im_start|>assistant
+                    """
+                    
+                    PARAMETER stop <|im_start|>
+                    PARAMETER stop <|im_end|>
+                    
+                    SYSTEM """당신은 유용한 AI 어시스턴트입니다. 사용자의 질의에 대해 친절하고 정확하게 답변해야 합니다.
+                    You are a helpful AI assistant, you'll need to answer users' queries in a friendly and accurate manner."""
+                    ```
+                    
+          - Modelfile로 모델 생성하기
+                
+                ```
+                ollama create EEVE-Ko -f Modelfile
+                ```
+                
+          - Open WebUI에서 모델 튜닝하기
+
+                
+<img width="878" alt="Screenshot 2024-09-01 at 6 59 30 PM" src="https://github.com/user-attachments/assets/e2fc0d3a-cbe4-4a16-b2e9-3a7f0b7afab8">
+
