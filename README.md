@@ -3,6 +3,10 @@
 
 <br>
 
+### 웹 사이트 -> [반디북](https://bandibook.vercel.app/10000-bagger)
+
+<br>
+
 ### 진행 방식
 - 각자 이름의 branch에서 각자 이름의 폴더에 공부 내용을 정리하여 한다.
 - 일주일에 5번 main branch를 향하는 PR을 올린다.
